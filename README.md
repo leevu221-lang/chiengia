@@ -22,9 +22,19 @@ Hệ thống nhập liệu thông tin khách hàng chuyên nghiệp chạy trự
   - Tự động ghi nhớ **Mã nhân viên** vào `localStorage` cho các lượt nhập tiếp theo mà không cần gõ lại.
   - Tự động đặt lại form và đưa con trỏ về ô *Khách Hàng* ngay sau khi lưu.
   - Âm thanh phản hồi Web Audio nhẹ nhàng khi lưu thành công hoặc báo lỗi.
+- **👥 Nút "Xem Chi Tiết Nhân Viên" & Bảng Danh Sách**:
+  - Nút **Xem Chi Tiết Nhân Viên ↗** có mặt ngay trên form nhập liệu và màn hình báo cáo.
+  - Hiển thị bảng tổng hợp dạng danh sách chuẩn xác với 5 cột:
+    1. **STT**
+    2. **NHÂN VIÊN**
+    3. **Đơn chiến giá**
+    4. **Không chiến**
+    5. **Tổng đơn**
+  - Kèm hàng **TỔNG CỘNG** ở chân bảng chốt số lượng đơn chiến giá, không chiến giá và tổng đơn.
+  - Bấm vào hàng nhân viên bất kỳ để mở rộng danh sách từng khách hàng của nhân viên đó.
+  - Có tab chuyển đổi linh hoạt giữa **📋 Dạng Danh Sách (Bảng)** và **🗂️ Dạng Thẻ (Cards)** cùng thanh tìm kiếm nhân viên siêu tốc.
 - **📊 Báo Cáo Tổng Hợp Trực Tuyến (Chọn Ngày)**:
   - Khi nhấn **Xem Kết Quả**, hệ thống hiển thị ngay giao diện **Báo Cáo Tổng Hợp** với bộ lọc ngày (`Hôm nay`, `Tất cả` hoặc chọn từ lịch).
-  - Thống kê tự động theo từng **Nhân Viên**: số đơn chiến giá, không chiến giá, tỷ lệ %, thanh tiến trình trực quan và danh sách đơn chi tiết khi bấm mở rộng.
 - **🕒 Hiển Thị Ngày Giờ Đầy Đủ (Full Timestamp)**:
   - Cột *Ngày* và *Time* trên Google Sheet luôn hiển thị đầy đủ `Ngày/Tháng/Năm Giờ:Phút:Giây` (ví dụ: `22/09/2026 14:36:31`), không bị rút gọn thành thứ hay mất giờ.
 

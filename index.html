@@ -72,7 +72,7 @@
     }
 
     .report-card {
-      max-width: 500px;
+      max-width: 550px;
     }
 
     @keyframes fadeIn {
@@ -771,6 +771,252 @@
       font-size: 2.2rem;
       opacity: 0.85;
     }
+
+    /* Nhóm nút điều hướng Form */
+    .action-buttons-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    /* Nút Xem Chi Tiết Nhân Viên nổi bật */
+    .btn-staff-action {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      color: #065f46;
+      border: 1.5px solid #10b981;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12);
+    }
+
+    .btn-staff-action:hover {
+      background: #a7f3d0;
+      border-color: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Header khu vực nhân viên & Switch Tab */
+    .staff-header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .view-switch-row {
+      display: flex;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-view-toggle {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: var(--transition);
+    }
+
+    .btn-view-toggle:hover {
+      color: #1e293b;
+    }
+
+    .btn-view-toggle.active {
+      background: #ffffff;
+      color: #065f46;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Hộp tìm kiếm nhân viên */
+    .staff-search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+    }
+
+    .staff-search-icon {
+      position: absolute;
+      left: 12px;
+      font-size: 0.95rem;
+      color: #94a3b8;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .staff-search-input {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px 0 36px;
+      font-size: 0.85rem;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      outline: none;
+      transition: var(--transition);
+      color: var(--text-main);
+    }
+
+    .staff-search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--input-focus-ring);
+    }
+
+    /* Container Bảng Chi Tiết Nhân Viên */
+    .table-container {
+      background: #ffffff;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(6, 78, 59, 0.04);
+      margin-top: 2px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .staff-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+
+    .staff-table th {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      color: #065f46;
+      font-weight: 800;
+      padding: 12px 8px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 1.5px solid #a7f3d0;
+      white-space: nowrap;
+    }
+
+    .staff-table th.center,
+    .staff-table td.center {
+      text-align: center;
+    }
+
+    .staff-table th.left,
+    .staff-table td.left {
+      text-align: left;
+    }
+
+    .staff-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .staff-table tbody tr.main-row {
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .staff-table tbody tr.main-row:hover {
+      background: #f0fdf4;
+    }
+
+    .staff-table tbody tr.main-row.active {
+      background: #ecfdf5;
+    }
+
+    .staff-row-user {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .staff-row-arrow {
+      font-size: 0.68rem;
+      color: #94a3b8;
+      margin-left: auto;
+      transition: transform 0.2s ease;
+    }
+
+    .staff-table tbody tr.main-row.active .staff-row-arrow {
+      transform: rotate(180deg);
+      color: #059669;
+    }
+
+    .staff-table tfoot td {
+      background: #d1fae5;
+      font-weight: 800;
+      color: #064e3b;
+      border-top: 2px solid #10b981;
+      padding: 11px 8px;
+      font-size: 0.88rem;
+    }
+
+    .badge-cell-chien {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 6px;
+      background: #dcfce7;
+      color: #15803d;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    .badge-cell-khong {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 6px;
+      background: #f1f5f9;
+      color: #475569;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .badge-cell-total {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 6px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    /* Hàng mở rộng chi tiết trong bảng */
+    .table-detail-row {
+      display: none;
+      background: #fafdfc;
+    }
+
+    .table-detail-cell {
+      padding: 10px 12px !important;
+      border-bottom: 1.5px dashed #cbd5e1 !important;
+    }
+
+    .table-detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
@@ -900,15 +1146,26 @@
       <!-- Phân cách -->
       <div class="divider"></div>
 
-      <!-- Nút Xem Báo Cáo Tổng Hợp (Chuyển sang form tổng hợp theo yêu cầu) -->
-      <button
-        type="button"
-        class="btn-sheet"
-        id="btnViewReport"
-        onclick="openReportView()"
-      >
-        <span>📊</span> <span>Xem Kết Quả (Tổng Hợp) ↗</span>
-      </button>
+      <!-- Nhóm nút Xem Báo Cáo & Xem Chi Tiết Nhân Viên -->
+      <div class="action-buttons-group">
+        <button
+          type="button"
+          class="btn-sheet btn-staff-action"
+          id="btnStaffDetail"
+          onclick="openReportView('table')"
+        >
+          <span>👥</span> <span>Xem Chi Tiết Nhân Viên ↗</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-sheet"
+          id="btnViewReport"
+          onclick="openReportView('cards')"
+        >
+          <span>📊</span> <span>Xem Kết Quả (Tổng Hợp) ↗</span>
+        </button>
+      </div>
 
     </form>
   </div>
@@ -974,15 +1231,72 @@
         </div>
       </div>
 
-      <!-- Tiêu đề danh sách nhân viên -->
-      <div class="staff-list-header">
-        <span>👥 TỔNG HỢP THEO NHÂN VIÊN</span>
-        <span id="staffCountBadge" style="font-size:0.8rem; font-weight:600; color:#64748b;">0 nhân viên</span>
+      <!-- Tiêu đề & Chuyển đổi hiển thị nhân viên -->
+      <div class="staff-header-actions">
+        <div class="staff-list-header">
+          <span>👥 CHI TIẾT THEO NHÂN VIÊN</span>
+          <span id="staffCountBadge" style="font-size:0.8rem; font-weight:700; color:#065f46; background:#ecfdf5; padding:2px 8px; border-radius:999px; border:1px solid #a7f3d0;">0 nhân viên</span>
+        </div>
+
+        <!-- Chuyển Đổi Dạng Hiển Thị -->
+        <div class="view-switch-row">
+          <button
+            type="button"
+            class="btn-view-toggle active"
+            id="btnToggleTable"
+            onclick="setStaffDisplayMode('table')"
+          >
+            <span>📋</span> <span>Xem Chi Tiết (Danh Sách)</span>
+          </button>
+          <button
+            type="button"
+            class="btn-view-toggle"
+            id="btnToggleCards"
+            onclick="setStaffDisplayMode('cards')"
+          >
+            <span>🗂️</span> <span>Dạng Thẻ</span>
+          </button>
+        </div>
+
+        <!-- Ô Tìm Kiếm Nhân Viên Nhanh -->
+        <div class="staff-search-wrapper">
+          <span class="staff-search-icon">🔍</span>
+          <input
+            type="text"
+            id="staffSearchInput"
+            class="staff-search-input"
+            placeholder="Tìm theo tên hoặc mã nhân viên..."
+            oninput="onStaffSearch()"
+          >
+        </div>
       </div>
 
-      <!-- Container Danh Sách Thẻ Nhân Viên -->
-      <div class="staff-cards-container" id="staffCardsContainer">
-        <!-- Được sinh động bằng JavaScript -->
+      <!-- 1. DẠNG BẢNG DANH SÁCH CHI TIẾT NHÂN VIÊN (STT | NHÂN VIÊN | Đơn chiến giá | Không chiến | Tổng đơn) -->
+      <div id="staffTableView" class="table-container">
+        <div class="table-responsive">
+          <table class="staff-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 10%;">STT</th>
+                <th class="left" style="width: 38%;">NHÂN VIÊN</th>
+                <th class="center" style="width: 18%;">Đơn chiến giá</th>
+                <th class="center" style="width: 17%;">Không chiến</th>
+                <th class="center" style="width: 17%;">Tổng đơn</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+            <tfoot id="staffTableFoot">
+              <!-- Rendered via JS -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. DẠNG THẺ TỔNG HỢP (Ẩn khi đang ở chế độ bảng) -->
+      <div class="staff-cards-container" id="staffCardsContainer" style="display:none;">
+        <!-- Rendered via JS -->
       </div>
 
       <!-- Phân cách -->
@@ -1308,16 +1622,57 @@
 
     // =========================================================================
     // ĐIỀU HƯỚNG CHUYỂN ĐỔI GIỮA 2 FORM (NHẬP LIỆU <-> TỔNG HỢP)
-    // =========================================================================
+    let currentStaffDisplayMode = "table"; // "table" | "cards"
+
     function openFormView() {
       document.getElementById('reportView').style.display = 'none';
       document.getElementById('formView').style.display = 'block';
     }
 
-    function openReportView() {
+    function openReportView(mode = 'table') {
       document.getElementById('formView').style.display = 'none';
       document.getElementById('reportView').style.display = 'block';
+      setStaffDisplayMode(mode);
       loadReportData();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setStaffDisplayMode(mode) {
+      currentStaffDisplayMode = mode;
+      const tableView = document.getElementById('staffTableView');
+      const cardsView = document.getElementById('staffCardsContainer');
+      const btnTable = document.getElementById('btnToggleTable');
+      const btnCards = document.getElementById('btnToggleCards');
+
+      if (mode === 'table') {
+        if (tableView) tableView.style.display = 'block';
+        if (cardsView) cardsView.style.display = 'none';
+        if (btnTable) btnTable.classList.add('active');
+        if (btnCards) btnCards.classList.remove('active');
+      } else {
+        if (tableView) tableView.style.display = 'none';
+        if (cardsView) cardsView.style.display = 'flex';
+        if (btnTable) btnTable.classList.remove('active');
+        if (btnCards) btnCards.classList.add('active');
+      }
+    }
+
+    function toggleTableRowDetails(id, trEl) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const isVisible = (el.style.display === 'table-row');
+      el.style.display = isVisible ? 'none' : 'table-row';
+      if (trEl) {
+        if (isVisible) {
+          trEl.classList.remove('active');
+        } else {
+          trEl.classList.add('active');
+        }
+      }
+    }
+
+    function onStaffSearch() {
+      renderFilteredReport();
     }
 
     // =========================================================================
@@ -1518,61 +1873,157 @@
       // Sắp xếp theo nhân viên có nhiều đơn nhất
       staffList.sort((a, b) => b.total - a.total);
 
-      document.getElementById('staffCountBadge').textContent = `${staffList.length} nhân viên`;
+      // Lọc theo từ khóa tìm kiếm nhân viên (nếu có)
+      const searchInput = document.getElementById('staffSearchInput');
+      const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      const displayedStaffList = searchKeyword ? staffList.filter(s => s.nhanVien.toLowerCase().includes(searchKeyword)) : staffList;
 
-      // 3. Hiển thị thẻ danh sách nhân viên
+      document.getElementById('staffCountBadge').textContent = `${displayedStaffList.length} nhân viên`;
+
+      // 3A. HIỂN THỊ DẠNG BẢNG DANH SÁCH CHI TIẾT NHÂN VIÊN
+      // CÁC CỘT: STT | NHÂN VIÊN | Đơn chiến giá | Không chiến | Tổng đơn
+      const tableBody = document.getElementById('staffTableBody');
+      const tableFoot = document.getElementById('staffTableFoot');
+      tableBody.innerHTML = "";
+      tableFoot.innerHTML = "";
+
+      if (displayedStaffList.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="center" style="padding: 28px 16px; color: #64748b; font-weight: 600;">
+              🌱 Không tìm thấy dữ liệu nhân viên trong khoảng thời gian đã chọn!
+            </td>
+          </tr>
+        `;
+      } else {
+        let sumChienGia = 0;
+        let sumKhongChien = 0;
+        let grandTotal = 0;
+
+        displayedStaffList.forEach((st, idx) => {
+          sumChienGia += st.chienGia;
+          sumKhongChien += st.khongChienGia;
+          grandTotal += st.total;
+
+          const rowDetailId = `table_orders_${idx}`;
+
+          // Dòng chính nhân viên
+          const mainRow = document.createElement('tr');
+          mainRow.className = "main-row";
+          mainRow.setAttribute('onclick', `toggleTableRowDetails('${rowDetailId}', this)`);
+          mainRow.title = "Bấm để xem danh sách khách hàng của nhân viên này";
+
+          mainRow.innerHTML = `
+            <td class="center font-bold" style="font-weight:700; color:#065f46;">${idx + 1}</td>
+            <td>
+              <div class="staff-row-user">
+                <span>👔</span>
+                <span>${escapeHtml(st.nhanVien)}</span>
+                <span class="staff-row-arrow">▼</span>
+              </div>
+            </td>
+            <td class="center"><span class="badge-cell-chien">${st.chienGia}</span></td>
+            <td class="center"><span class="badge-cell-khong">${st.khongChienGia}</span></td>
+            <td class="center"><span class="badge-cell-total">${st.total}</span></td>
+          `;
+          tableBody.appendChild(mainRow);
+
+          // Dòng mở rộng chi tiết các đơn của nhân viên đó
+          const detailRow = document.createElement('tr');
+          detailRow.className = "table-detail-row";
+          detailRow.id = rowDetailId;
+          detailRow.innerHTML = `
+            <td colspan="5" class="table-detail-cell">
+              <div class="table-detail-list">
+                <div style="font-size:0.76rem; font-weight:800; color:#065f46; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📋 Danh sách khách hàng (${st.total} đơn):</span>
+                  <span style="font-size:0.72rem; color:#64748b;">(Click lại hàng để đóng)</span>
+                </div>
+                ${st.orders.map(o => `
+                  <div class="order-sub-item">
+                    <div>
+                      <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
+                      <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
+                      ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
+                    </div>
+                    <div style="text-align:right;">
+                      <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>
+                      <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">${o.time || ''}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(detailRow);
+        });
+
+        // Hàng TỔNG CỘNG ở cuối bảng
+        tableFoot.innerHTML = `
+          <tr>
+            <td colspan="2" style="font-weight: 800; color: #064e3b; text-align: center;">TỔNG CỘNG</td>
+            <td class="center"><span class="badge-cell-chien" style="font-size:0.92rem;">${sumChienGia}</span></td>
+            <td class="center"><span class="badge-cell-khong" style="font-size:0.92rem;">${sumKhongChien}</span></td>
+            <td class="center"><span class="badge-cell-total" style="font-size:0.92rem;">${grandTotal}</span></td>
+          </tr>
+        `;
+      }
+
+      // 3B. HIỂN THỊ DẠNG THẺ (CARDS)
       const container = document.getElementById('staffCardsContainer');
       container.innerHTML = "";
 
-      if (staffList.length === 0) {
+      if (displayedStaffList.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
             <span class="empty-state-icon">🌱</span>
             <span>Không có dữ liệu đơn hàng trong ngày đã chọn!</span>
           </div>
         `;
-        return;
+      } else {
+        displayedStaffList.forEach((st, idx) => {
+          const rate = st.total > 0 ? Math.round((st.chienGia / st.total) * 1000) / 10 : 0;
+          const cardId = `staff_detail_${idx}`;
+
+          const card = document.createElement('div');
+          card.className = "staff-card";
+          card.innerHTML = `
+            <div class="staff-card-top" onclick="toggleStaffDetails('${cardId}')">
+              <div class="staff-name">
+                <span>👔</span> <span>${escapeHtml(st.nhanVien)}</span>
+              </div>
+              <div class="staff-rate">${rate}% Chiến Giá</div>
+            </div>
+            <div class="staff-stats-row" onclick="toggleStaffDetails('${cardId}')">
+              <span class="badge-stat chien-gia">⚔️ ${st.chienGia} chiến giá</span>
+              <span class="badge-stat thuong">🏷️ ${st.khongChienGia} thường</span>
+              <span class="badge-stat tong">Tổng: ${st.total} đơn</span>
+            </div>
+            <div class="progress-bar-bg" onclick="toggleStaffDetails('${cardId}')">
+              <div class="progress-bar-fill" style="width: ${rate}%;"></div>
+            </div>
+            <div class="staff-orders-detail" id="${cardId}">
+              ${st.orders.map(o => `
+                <div class="order-sub-item">
+                  <div>
+                    <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
+                    <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
+                    ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
+                  </div>
+                  <div style="text-align:right;">
+                    <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>
+                    <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">${o.time || ''}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          container.appendChild(card);
+        });
       }
 
-      staffList.forEach((st, idx) => {
-        const rate = st.total > 0 ? Math.round((st.chienGia / st.total) * 1000) / 10 : 0;
-        const cardId = `staff_detail_${idx}`;
-
-        const card = document.createElement('div');
-        card.className = "staff-card";
-        card.innerHTML = `
-          <div class="staff-card-top" onclick="toggleStaffDetails('${cardId}')">
-            <div class="staff-name">
-              <span>👔</span> <span>${escapeHtml(st.nhanVien)}</span>
-            </div>
-            <div class="staff-rate">${rate}% Chiến Giá</div>
-          </div>
-          <div class="staff-stats-row" onclick="toggleStaffDetails('${cardId}')">
-            <span class="badge-stat chien-gia">⚔️ ${st.chienGia} chiến giá</span>
-            <span class="badge-stat thuong">🏷️ ${st.khongChienGia} thường</span>
-            <span class="badge-stat tong">Tổng: ${st.total} đơn</span>
-          </div>
-          <div class="progress-bar-bg" onclick="toggleStaffDetails('${cardId}')">
-            <div class="progress-bar-fill" style="width: ${rate}%;"></div>
-          </div>
-          <div class="staff-orders-detail" id="${cardId}">
-            ${st.orders.map(o => `
-              <div class="order-sub-item">
-                <div>
-                  <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
-                  <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
-                  ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
-                </div>
-                <div style="text-align:right;">
-                  <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>
-                  <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">${o.time || ''}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        container.appendChild(card);
-      });
+      // Đảm bảo hiển thị đúng view đang chọn (Table hoặc Cards)
+      setStaffDisplayMode(currentStaffDisplayMode);
     }
 
     function toggleStaffDetails(id) {

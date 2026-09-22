@@ -38,6 +38,7 @@ function onOpen() {
     ui.createMenu("🌿 Quản Lý Nhập Liệu")
       .addItem("▶ Mở Form Nhập Liệu (Bên phải - Sidebar)", "showSidebar")
       .addItem("▶ Mở Form Nhập Liệu (Cửa sổ giữa - Dialog)", "showModalDialog")
+      .addItem("👥 Xem Chi Tiết Nhân Viên", "showStaffDetailDialog")
       .addSeparator()
       .addItem("🔄 Cập Nhật Lại Bảng Tổng Hợp", "manualUpdateSummary")
       .addItem("🎨 Định Dạng Lại Tiêu Đề Cột", "formatSheetsManual")
@@ -61,6 +62,13 @@ function showModalDialog() {
     .setWidth(480)
     .setHeight(750);
   SpreadsheetApp.getUi().showModalDialog(html, "Nhập Liệu Khách Hàng");
+}
+
+function showStaffDetailDialog() {
+  const html = HtmlService.createHtmlOutputFromFile("index")
+    .setWidth(560)
+    .setHeight(760);
+  SpreadsheetApp.getUi().showModalDialog(html, "👥 Chi Tiết Theo Nhân Viên");
 }
 
 /**
