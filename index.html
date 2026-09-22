@@ -2530,16 +2530,51 @@
         const resBlob = await fetch(dataUrl);
         currentExportBlob = await resBlob.blob();
 
-        // Mở modal xem trước và tự động tải về
+        // 1. Mở modal xem trước
         openImageModal(dataUrl, title, filename);
-        downloadDataUrl(dataUrl, filename);
+
+        // 2. TỰ ĐỘNG COPY ẢNH VÀO CLIPBOARD (Không auto tải về máy)
+        let autoCopied = false;
+        try {
+          if (navigator.clipboard && navigator.clipboard.write && currentExportBlob) {
+            const item = new ClipboardItem({ 'image/png': currentExportBlob });
+            await navigator.clipboard.write([item]);
+            autoCopied = true;
+          }
+        } catch (copyErr) {
+          console.warn("Lỗi auto-copy ảnh:", copyErr);
+        }
+
         playBeep('success');
-        showToast(`✅ Đã xuất ảnh ${title} thành công!`, "success");
+        if (autoCopied) {
+          highlightCopyButtonSuccess();
+          showToast("📋 Đã tự động copy ảnh! Bạn có thể dán (Ctrl+V) ngay vào Zalo/Telegram", "success");
+        } else {
+          showToast(`✅ Đã xuất ảnh ${title}! Bạn có thể bấm 'Sao Chép Ảnh' hoặc 'Tải Về Máy'`, "success");
+        }
       } catch (err) {
         showToast("Lỗi khi xuất ảnh: " + err.message, "error");
       } finally {
         container.remove();
       }
+    }
+
+    function highlightCopyButtonSuccess() {
+      const btn = document.getElementById('btnCopyImage');
+      if (!btn) return;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<span>✓</span> <span>Đã Tự Động Copy!</span>`;
+      btn.style.background = "#dcfce7";
+      btn.style.borderColor = "#10b981";
+      btn.style.color = "#047857";
+      btn.style.fontWeight = "800";
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.style.background = "";
+        btn.style.borderColor = "";
+        btn.style.color = "";
+        btn.style.fontWeight = "";
+      }, 3000);
     }
 
     function openImageModal(dataUrl, title, filename) {
@@ -2589,6 +2624,7 @@
           const item = new ClipboardItem({ 'image/png': currentExportBlob });
           await navigator.clipboard.write([item]);
           playBeep('success');
+          highlightCopyButtonSuccess();
           showToast("📋 Đã copy ảnh! Bạn có thể dán (Ctrl+V) ngay vào Zalo/Telegram", "success");
         } else {
           showToast("Trình duyệt không hỗ trợ copy ảnh trực tiếp. Vui lòng bấm 'Tải Ảnh Về Máy'!", "info");
