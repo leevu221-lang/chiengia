@@ -522,27 +522,40 @@
       gap: 10px;
     }
 
-    .filter-row {
+    .filter-range-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .date-field-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 130px;
     }
 
     .filter-label {
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: #334155;
       display: flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
     }
 
     .date-input {
-      padding: 6px 10px;
+      flex: 1;
+      width: 100%;
+      min-width: 110px;
+      padding: 6px 8px;
       border-radius: 8px;
       border: 1.5px solid #cbd5e1;
-      font-size: 0.88rem;
+      font-size: 0.84rem;
       font-weight: 600;
       color: #1e293b;
       outline: none;
@@ -553,6 +566,12 @@
     .date-input:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--input-focus-ring);
+    }
+
+    .date-range-separator {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      font-weight: 700;
     }
 
     .quick-pills {
@@ -1710,17 +1729,29 @@
     <!-- Body Báo Cáo -->
     <div class="card-body">
       
-      <!-- Bộ Lọc Ngày -->
+      <!-- Bộ Lọc Ngày (Từ Ngày -> Đến Ngày) -->
       <div class="filter-section">
-        <div class="filter-row">
-          <label class="filter-label" for="filterDate">
-            <span>📅</span> <span>Chọn Ngày:</span>
-          </label>
-          <input type="date" id="filterDate" class="date-input" onchange="onDatePickerChange()">
+        <div class="filter-range-row">
+          <div class="date-field-group">
+            <label class="filter-label" for="filterDateFrom">
+              <span>📅</span> <span>Từ ngày:</span>
+            </label>
+            <input type="date" id="filterDateFrom" class="date-input" onchange="onDateRangePickerChange()">
+          </div>
+          <div class="date-range-separator">➔</div>
+          <div class="date-field-group">
+            <label class="filter-label" for="filterDateTo">
+              <span>📅</span> <span>Đến ngày:</span>
+            </label>
+            <input type="date" id="filterDateTo" class="date-input" onchange="onDateRangePickerChange()">
+          </div>
         </div>
         <div class="quick-pills">
           <button type="button" class="pill-btn active" id="pillToday" onclick="filterByToday()">Hôm nay</button>
-          <button type="button" class="pill-btn" id="pillAll" onclick="filterByAll()">Tất cả các ngày</button>
+          <button type="button" class="pill-btn" id="pillYesterday" onclick="filterByYesterday()">Hôm qua</button>
+          <button type="button" class="pill-btn" id="pillThisWeek" onclick="filterByThisWeek()">Tuần này</button>
+          <button type="button" class="pill-btn" id="pillThisMonth" onclick="filterByThisMonth()">Tháng này</button>
+          <button type="button" class="pill-btn" id="pillAll" onclick="filterByAll()">Tất cả</button>
         </div>
       </div>
 
@@ -2438,8 +2469,22 @@
 
     // Trạng thái dữ liệu báo cáo
     let rawCustomersList = [];
-    let currentFilterMode = "today"; // "today" | "all" | "date"
-    let selectedFilterDate = ""; // format yyyy-mm-dd
+    let currentFilterMode = "today"; // "today" | "yesterday" | "this_week" | "this_month" | "range" | "all"
+    let selectedFilterDateFrom = ""; // format yyyy-mm-dd
+    let selectedFilterDateTo = "";   // format yyyy-mm-dd
+
+    function getTodayDateKey() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function formatDateDisplayVN(yyyy_mm_dd) {
+      if (!yyyy_mm_dd) return "";
+      const p = yyy_mm_dd.split("-");
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return yyy_mm_dd;
+    }
 
     // 1. Đồng hồ thời gian thực (Live Clock)
     function updateClock() {
@@ -2471,12 +2516,14 @@
         inputNV.value = savedNV;
       }
 
-      // Khởi tạo ngày hôm nay cho bộ lọc
-      const today = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      selectedFilterDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-      const filterInput = document.getElementById('filterDate');
-      if (filterInput) filterInput.value = selectedFilterDate;
+      // Khởi tạo ngày hôm nay cho bộ lọc khoảng ngày (Từ ngày -> Đến ngày)
+      const today = getTodayDateKey();
+      selectedFilterDateFrom = today;
+      selectedFilterDateTo = today;
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = today;
+      if (elTo) elTo.value = today;
 
       setupKeyboardShortcuts();
 
@@ -3634,33 +3681,137 @@
       rawCustomersList = list;
     }
 
+    function setActivePill(activeId) {
+      const pills = ['pillToday', 'pillYesterday', 'pillThisWeek', 'pillThisMonth', 'pillAll'];
+      pills.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          if (id === activeId) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+    }
+
+    function clearActivePills() {
+      const pills = ['pillToday', 'pillYesterday', 'pillThisWeek', 'pillThisMonth', 'pillAll'];
+      pills.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove('active');
+      });
+    }
+
     // Các hàm chọn ngày
     function filterByToday() {
       currentFilterMode = "today";
-      const today = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      selectedFilterDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-      document.getElementById('filterDate').value = selectedFilterDate;
+      const today = getTodayDateKey();
+      selectedFilterDateFrom = today;
+      selectedFilterDateTo = today;
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = today;
+      if (elTo) elTo.value = today;
 
-      document.getElementById('pillToday').classList.add('active');
-      document.getElementById('pillAll').classList.remove('active');
+      setActivePill('pillToday');
+      renderFilteredReport();
+    }
+
+    function filterByYesterday() {
+      currentFilterMode = "yesterday";
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      const pad = (n) => String(n).padStart(2, '0');
+      const yKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      selectedFilterDateFrom = yKey;
+      selectedFilterDateTo = yKey;
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = yKey;
+      if (elTo) elTo.value = yKey;
+
+      setActivePill('pillYesterday');
+      renderFilteredReport();
+    }
+
+    function filterByThisWeek() {
+      currentFilterMode = "this_week";
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - (day === 0 ? 6 : day - 1);
+      const monday = new Date(now.setDate(diff));
+      const pad = (n) => String(n).padStart(2, '0');
+      const fromKey = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+      const toKey = getTodayDateKey();
+
+      selectedFilterDateFrom = fromKey;
+      selectedFilterDateTo = toKey;
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = fromKey;
+      if (elTo) elTo.value = toKey;
+
+      setActivePill('pillThisWeek');
+      renderFilteredReport();
+    }
+
+    function filterByThisMonth() {
+      currentFilterMode = "this_month";
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const fromKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+      const toKey = getTodayDateKey();
+
+      selectedFilterDateFrom = fromKey;
+      selectedFilterDateTo = toKey;
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = fromKey;
+      if (elTo) elTo.value = toKey;
+
+      setActivePill('pillThisMonth');
       renderFilteredReport();
     }
 
     function filterByAll() {
       currentFilterMode = "all";
-      document.getElementById('pillToday').classList.remove('active');
-      document.getElementById('pillAll').classList.add('active');
+      selectedFilterDateFrom = "";
+      selectedFilterDateTo = "";
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (elFrom) elFrom.value = "";
+      if (elTo) elTo.value = "";
+
+      setActivePill('pillAll');
       renderFilteredReport();
     }
 
-    function onDatePickerChange() {
-      const val = document.getElementById('filterDate').value;
-      if (val) {
-        selectedFilterDate = val;
-        currentFilterMode = "date";
-        document.getElementById('pillToday').classList.remove('active');
-        document.getElementById('pillAll').classList.remove('active');
+    function onDateRangePickerChange() {
+      const elFrom = document.getElementById('filterDateFrom');
+      const elTo = document.getElementById('filterDateTo');
+      if (!elFrom || !elTo) return;
+
+      let valFrom = elFrom.value;
+      let valTo = elTo.value;
+
+      if (!valFrom && valTo) {
+        valFrom = valTo;
+        elFrom.value = valTo;
+      } else if (valFrom && !valTo) {
+        valTo = valFrom;
+        elTo.value = valFrom;
+      }
+
+      if (valFrom && valTo) {
+        if (valFrom > valTo) {
+          const temp = valFrom;
+          valFrom = valTo;
+          valTo = temp;
+          elFrom.value = valFrom;
+          elTo.value = valTo;
+        }
+        selectedFilterDateFrom = valFrom;
+        selectedFilterDateTo = valTo;
+        currentFilterMode = "range";
+        clearActivePills();
         renderFilteredReport();
       }
     }
@@ -3670,14 +3821,7 @@
       const headerDateEl = document.getElementById('reportHeaderDate');
       let filteredList = [];
 
-      const pad = (n) => String(n).padStart(2, '0');
-      const today = new Date();
-      const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-
-      if (currentFilterMode === "today") {
-        filteredList = rawCustomersList.filter(item => item.dateKey === todayKey || item.dateDisplay.includes(`${pad(today.getDate())}/${pad(today.getMonth() + 1)}`));
-        headerDateEl.textContent = `Hôm nay: ${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${today.getFullYear()}`;
-      } else if (currentFilterMode === "all") {
+      if (currentFilterMode === "all" || (!selectedFilterDateFrom && !selectedFilterDateTo)) {
         filteredList = rawCustomersList;
         if (!isFullHistoryLoaded && rawCustomersList.length >= 3000) {
           headerDateEl.innerHTML = `3.000 đơn gần nhất (<a href="javascript:void(0)" onclick="loadReportData(true, true)" style="color:#059669; text-decoration:underline; font-weight:700;">Tải tất cả lịch sử cũ ⚡</a>)`;
@@ -3685,10 +3829,25 @@
           headerDateEl.textContent = `Toàn bộ thời gian (${rawCustomersList.length} đơn)`;
         }
       } else {
-        const parts = selectedFilterDate.split("-");
-        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        filteredList = rawCustomersList.filter(item => item.dateKey === selectedFilterDate || item.dateDisplay === formattedDate);
-        headerDateEl.textContent = `Ngày: ${formattedDate}`;
+        const from = selectedFilterDateFrom;
+        const to = selectedFilterDateTo;
+
+        if (from && to) {
+          if (from === to) {
+            filteredList = rawCustomersList.filter(item => item.dateKey === from);
+            if (from === getTodayDateKey()) {
+              headerDateEl.textContent = `Hôm nay: ${formatDateDisplayVN(from)}`;
+            } else {
+              headerDateEl.textContent = `Ngày: ${formatDateDisplayVN(from)}`;
+            }
+          } else {
+            filteredList = rawCustomersList.filter(item => item.dateKey && item.dateKey >= from && item.dateKey <= to);
+            headerDateEl.textContent = `Từ ${formatDateDisplayVN(from)} đến ${formatDateDisplayVN(to)}`;
+          }
+        } else {
+          filteredList = rawCustomersList;
+          headerDateEl.textContent = `Toàn bộ thời gian (${rawCustomersList.length} đơn)`;
+        }
       }
 
       // 1. Tính toán KPIs tổng quan
