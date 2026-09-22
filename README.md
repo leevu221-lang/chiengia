@@ -1,6 +1,11 @@
 # 🌿 Google Apps Script: Form Nhập Liệu Khách Hàng & Báo Cáo Tổng Hợp Chiến Giá
 
-Hệ thống nhập liệu thông tin khách hàng chuyên nghiệp bằng **Google Apps Script** kết hợp đồng bộ trực tiếp với **Google Sheets**, thiết kế chuẩn **Tone Xanh Lá Pastel** sang trọng và tối ưu trải nghiệm người dùng.
+Hệ thống nhập liệu thông tin khách hàng chuyên nghiệp chạy trực tiếp trên **GitHub Pages** và đồng bộ tức thời với **Google Sheets**, thiết kế chuẩn **Tone Xanh Lá Pastel** sang trọng.
+
+### 🌐 Link Truy Cập Ứng Dụng:
+- **Giao diện Web App (GitHub Pages)**: 👉 **[https://leevu221-lang.github.io/chiengia/](https://leevu221-lang.github.io/chiengia/)**
+- **Trang tính Google Sheet**: 👉 **[Xem Trang Tính](https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing)**
+- **Google Apps Script Web App**: `https://script.google.com/macros/s/AKfycbxE2Rm3_eyImKCAX5FSJ0BajF7AlaFaxqhlVj4nsgwkXnjtvlMgDiQDCYZ-gt9IJlLB/exec`
 
 ---
 
