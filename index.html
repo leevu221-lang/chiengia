@@ -2025,12 +2025,12 @@
         const paramSheet = (urlParams.get('sheet') || '').trim();
 
         if (paramS) {
+          // =====================================================================
+          // 1. LINK RÚT GỌN CHO NHÂN VIÊN (?s=1841) -> ẨN HOÀN TOÀN ICON BÁNH RĂNG
+          // =====================================================================
           currentShopCode = paramS;
-          try {
-            localStorage.setItem(STORAGE_KEY_SHOP_CODE, paramS);
-          } catch (e) {}
+          document.body.classList.add('employee-mode');
 
-          // 1. Kiểm tra cache localStorage để nạp tức thì trong 0 giây
           const cachedId = localStorage.getItem("shop_code_" + paramS);
           const cachedTitle = localStorage.getItem("shop_title_" + paramS);
           if (cachedId) {
@@ -2038,50 +2038,22 @@
             currentShopTitle = cachedTitle || paramS;
           }
 
-          // 2. Tra cứu đồng bộ từ bảng SHOPS trên Master Spreadsheet
           resolveShopOnline(paramS);
         } else if (paramSheet) {
-          const parsed = extractSpreadsheetId(paramSheet);
-          if (parsed) {
-            currentSheetId = parsed;
-            try {
-              localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsed);
-            } catch (e) {}
-          }
-        } else {
-          // Kiểm tra bộ nhớ máy
-          const savedCode = localStorage.getItem(STORAGE_KEY_SHOP_CODE);
-          if (savedCode) {
-            currentShopCode = savedCode;
-            const cachedId = localStorage.getItem("shop_code_" + savedCode);
-            if (cachedId) {
-              currentSheetId = cachedId;
-              currentShopTitle = localStorage.getItem("shop_title_" + savedCode) || savedCode;
-            }
-            resolveShopOnline(savedCode);
-          } else {
-            const savedSheet = localStorage.getItem(STORAGE_KEY_CUSTOM_SHEET);
-            if (savedSheet && extractSpreadsheetId(savedSheet)) {
-              currentSheetId = savedSheet;
-            }
-          }
-        }
-
-        // Nhận diện chế độ Nhân viên vs Quản trị viên
-        const hasAdminParam = urlParams.has('admin') || urlParams.get('role') === 'admin';
-        const hasShopParam = Boolean(paramS || paramSheet);
-        
-        // Nếu vào qua link chia sẻ (?s=... hoặc ?sheet=...) và không có ?admin -> Tự động ẩn icon bánh răng
-        if (hasShopParam && !hasAdminParam) {
-          localStorage.setItem("is_employee_mode", "true");
-        } else if (hasAdminParam) {
-          localStorage.removeItem("is_employee_mode");
-        }
-
-        const isEmployee = (localStorage.getItem("is_employee_mode") === "true") && !hasAdminParam;
-        if (isEmployee) {
+          // =====================================================================
+          // 2. LINK THEO SHEET ID CŨ (?sheet=...) -> ẨN HOÀN TOÀN ICON BÁNH RĂNG
+          // =====================================================================
+          currentShopCode = "";
+          currentSheetId = extractSpreadsheetId(paramSheet) || DEFAULT_SPREADSHEET_ID;
           document.body.classList.add('employee-mode');
         } else {
+          // =====================================================================
+          // 3. LINK GỐC QUẢN LÝ (https://leevu221-lang.github.io/chiengia/)
+          // ĐÂY LÀ LINK GỐC ADMIN -> LUÔN LUÔN HIỆN ICON BÁNH RĂNG ⚙️
+          // =====================================================================
+          currentSheetId = DEFAULT_SPREADSHEET_ID;
+          currentShopCode = "";
+          currentShopTitle = "";
           document.body.classList.remove('employee-mode');
         }
       } catch (err) {
@@ -2345,11 +2317,9 @@
             localStorage.setItem(STORAGE_KEY_SHOP_CODE, fallbackCode);
           } catch (e) {}
           const newUrl = window.location.origin + window.location.pathname + "?s=" + fallbackCode;
-          try { window.history.replaceState({ path: newUrl }, '', newUrl); } catch (e) {}
           const shareEl = document.getElementById('shareableEmployeeLink');
           if (shareEl) shareEl.value = newUrl;
-          showToast(`✅ Đã lưu cấu hình với mã: ?s=${fallbackCode}`, "success");
-          closeSettingsModal();
+          showToast(`✅ Đã tạo link rút gọn cho nhân viên: ?s=${fallbackCode}`, "success");
           loadMasterStaffList();
         }
       }, 10000);
@@ -2378,18 +2348,13 @@
           } catch (e) {}
 
           const newShareUrl = window.location.origin + window.location.pathname + "?s=" + registeredCode;
-          try {
-            window.history.replaceState({ path: newShareUrl }, '', newShareUrl);
-          } catch (e) {}
-
           const shareEl = document.getElementById('shareableEmployeeLink');
           if (shareEl) shareEl.value = newShareUrl;
 
           const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
           if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
 
-          showToast(`✅ Đã tạo link rút gọn: ?s=${registeredCode}`, "success");
-          closeSettingsModal();
+          showToast(`✅ Đã tạo link rút gọn cho nhân viên: ?s=${registeredCode}`, "success");
 
           loadMasterStaffList();
           if (document.getElementById('reportView').style.display !== 'none') {
