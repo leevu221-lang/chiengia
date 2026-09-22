@@ -22,14 +22,11 @@ Hệ thống nhập liệu thông tin khách hàng chuyên nghiệp chạy trự
   - Tự động ghi nhớ **Mã nhân viên** vào `localStorage` cho các lượt nhập tiếp theo mà không cần gõ lại.
   - Tự động đặt lại form và đưa con trỏ về ô *Khách Hàng* ngay sau khi lưu.
   - Âm thanh phản hồi Web Audio nhẹ nhàng khi lưu thành công hoặc báo lỗi.
-- **📊 Đồng bộ dữ liệu kép**:
-  - **Sheet `DATA`**: Lưu toàn bộ lịch sử 8 cột chi tiết, tự động đánh STT, chuẩn hóa SĐT giữ nguyên số `0` ở đầu.
-  - **Sheet `TỔNG HỢP`**: Tự động gom nhóm theo **Ngày** và **Nhân viên**, thống kê chính xác:
-    - *Số đơn chiến giá*
-    - *Số đơn không chiến giá*
-    - *Tổng số đơn*
-    - *Tỷ lệ chiến giá (%)*
-    - *Dòng TỔNG CỘNG in đậm nổi bật*
+- **📊 Báo Cáo Tổng Hợp Trực Tuyến (Chọn Ngày)**:
+  - Khi nhấn **Xem Kết Quả**, hệ thống hiển thị ngay giao diện **Báo Cáo Tổng Hợp** với bộ lọc ngày (`Hôm nay`, `Tất cả` hoặc chọn từ lịch).
+  - Thống kê tự động theo từng **Nhân Viên**: số đơn chiến giá, không chiến giá, tỷ lệ %, thanh tiến trình trực quan và danh sách đơn chi tiết khi bấm mở rộng.
+- **🕒 Hiển Thị Ngày Giờ Đầy Đủ (Full Timestamp)**:
+  - Cột *Ngày* và *Time* trên Google Sheet luôn hiển thị đầy đủ `Ngày/Tháng/Năm Giờ:Phút:Giây` (ví dụ: `22/09/2026 14:36:31`), không bị rút gọn thành thứ hay mất giờ.
 
 ---
 

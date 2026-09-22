@@ -86,6 +86,12 @@ function doGet(e) {
     return createJsonResponse(result, e.parameter.callback);
   }
 
+  // 3. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web
+  if (e && e.parameter && (e.parameter.action === "getReport" || e.parameter.action === "getData")) {
+    const report = getReportData();
+    return createJsonResponse(report, e.parameter.callback);
+  }
+
   // 3. Mặc định mở giao diện Web App
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Nhập Dữ Liệu Khách Hàng - Chiến Giá")
@@ -413,30 +419,42 @@ function updateSummarySheetInternal(ss) {
   dataValues.forEach(row => {
     const nhanVien = (row[3] || "").toString().trim() || "Chưa phân công";
     const chienGiaVal = (row[4] || "").toString().trim().toLowerCase();
-    const timeVal = (row[5] || "").toString().trim();
+    
+    // Xử lý chuẩn xác thời gian từ Date object hoặc string
+    let rawTime = row[5];
+    let fullDateTimeStr = "";
+    let dateOnlyStr = "";
 
-    // Tách lấy Ngày (dd/MM/yyyy) từ chuỗi thời gian
-    let ngay = "";
-    if (timeVal.includes(" ")) {
-      ngay = timeVal.split(" ")[0]; // Nếu dạng dd/MM/yyyy HH:mm:ss
-      if (ngay.includes(":") && timeVal.split(" ").length > 1) {
-        ngay = timeVal.split(" ")[1]; // Nếu dạng HH:mm:ss dd/MM/yyyy
+    if (rawTime instanceof Date) {
+      fullDateTimeStr = Utilities.formatDate(rawTime, "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
+      dateOnlyStr = Utilities.formatDate(rawTime, "Asia/Ho_Chi_Minh", "dd/MM/yyyy");
+    } else if (rawTime) {
+      const str = rawTime.toString().trim();
+      const parsedD = new Date(str);
+      if (!isNaN(parsedD.getTime()) && (str.includes("GMT") || str.length > 15)) {
+        fullDateTimeStr = Utilities.formatDate(parsedD, "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
+        dateOnlyStr = Utilities.formatDate(parsedD, "Asia/Ho_Chi_Minh", "dd/MM/yyyy");
+      } else {
+        fullDateTimeStr = str;
+        dateOnlyStr = str.includes(" ") ? str.split(" ")[0] : str;
       }
-    } else if (timeVal) {
-      ngay = timeVal;
     }
 
-    if (!ngay && !nhanVien) return;
+    if (!fullDateTimeStr && !nhanVien) return;
 
-    const key = `${ngay}___${nhanVien}`;
+    const key = `${dateOnlyStr}___${nhanVien}`;
     if (!summaryMap[key]) {
       summaryMap[key] = {
-        ngay: ngay,
+        ngayHienThi: fullDateTimeStr, // Hiển thị full Ngày tháng năm giờ phút giây
+        ngayLoc: dateOnlyStr,
         nhanVien: nhanVien,
         chienGia: 0,
         khongChienGia: 0,
         total: 0
       };
+    } else {
+      // Cập nhật thời gian mới nhất trong ngày
+      summaryMap[key].ngayHienThi = fullDateTimeStr;
     }
 
     const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
@@ -464,8 +482,8 @@ function updateSummarySheetInternal(ss) {
       return 0;
     };
 
-    const timeA = parseDate(itemA.ngay);
-    const timeB = parseDate(itemB.ngay);
+    const timeA = parseDate(itemA.ngayLoc);
+    const timeB = parseDate(itemB.ngayLoc);
 
     if (timeA !== timeB) return timeB - timeA;
     return itemA.nhanVien.localeCompare(itemB.nhanVien, "vi");
@@ -486,7 +504,7 @@ function updateSummarySheetInternal(ss) {
 
     outputRows.push([
       idx + 1,
-      item.ngay,
+      item.ngayHienThi, // Full Ngày tháng năm giờ phút giây
       item.nhanVien,
       item.chienGia,
       item.khongChienGia,
@@ -523,7 +541,7 @@ function updateSummarySheetInternal(ss) {
   }
 
   sheetSummary.getRange(startRow, 1, numRows, 1).setHorizontalAlignment("center");
-  sheetSummary.getRange(startRow, 2, numRows, 1).setHorizontalAlignment("center");
+  sheetSummary.getRange(startRow, 2, numRows, 1).setHorizontalAlignment("center").setNumberFormat("@"); // Định dạng text để giữ full ngày giờ
   sheetSummary.getRange(startRow, 3, numRows, 1).setHorizontalAlignment("left");
   sheetSummary.getRange(startRow, 4, numRows, 4).setHorizontalAlignment("center");
   sheetSummary.getRange(startRow, 7, numRows, 1).setNumberFormat("0.0%");
@@ -535,6 +553,81 @@ function updateSummarySheetInternal(ss) {
     .setBackground(THEME.TOTAL_BG)
     .setFontColor(THEME.TOTAL_TEXT)
     .setBorder(true, true, true, true, true, true, THEME.TOTAL_TEXT, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+}
+
+/**
+ * 6. LẤY DỮ LIỆU BÁO CÁO CHO WEB FORM TỔNG HỢP
+ */
+function getReportData() {
+  try {
+    const ss = getSpreadsheet();
+    const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
+    const lastRow = sheetData.getLastRow();
+    if (lastRow <= 1) {
+      return { success: true, list: [], dates: [] };
+    }
+
+    const dataValues = sheetData.getRange(2, 1, lastRow - 1, 7).getValues();
+    const list = [];
+    const dateSet = {};
+
+    dataValues.forEach((row, idx) => {
+      const stt = row[0] || (idx + 1);
+      const khachHang = (row[1] || "").toString().trim();
+      const sdt = (row[2] || "").toString().trim().replace(/^'/, "");
+      const nhanVien = (row[3] || "").toString().trim() || "Chưa phân công";
+      const chienGiaVal = (row[4] || "").toString().trim().toLowerCase();
+      const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
+
+      let rawTime = row[5];
+      let fullTimeStr = "";
+      let dateOnly = "";
+
+      if (rawTime instanceof Date) {
+        fullTimeStr = Utilities.formatDate(rawTime, "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
+        dateOnly = Utilities.formatDate(rawTime, "Asia/Ho_Chi_Minh", "dd/MM/yyyy");
+      } else if (rawTime) {
+        const str = rawTime.toString().trim();
+        const parsedD = new Date(str);
+        if (!isNaN(parsedD.getTime()) && (str.includes("GMT") || str.length > 15)) {
+          fullTimeStr = Utilities.formatDate(parsedD, "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
+          dateOnly = Utilities.formatDate(parsedD, "Asia/Ho_Chi_Minh", "dd/MM/yyyy");
+        } else {
+          fullTimeStr = str;
+          dateOnly = str.includes(" ") ? str.split(" ")[0] : str;
+        }
+      }
+
+      const sanPham = (row[6] || "").toString().trim();
+
+      if (dateOnly) dateSet[dateOnly] = true;
+
+      list.push({
+        stt: stt,
+        khachHang: khachHang,
+        sdt: sdt,
+        nhanVien: nhanVien,
+        chienGia: isChienGia,
+        chienGiaText: isChienGia ? "Có" : "Không",
+        time: fullTimeStr,
+        date: dateOnly,
+        sanPham: sanPham
+      });
+    });
+
+    return {
+      success: true,
+      list: list,
+      dates: Object.keys(dateSet).sort().reverse()
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.toString(),
+      list: [],
+      dates: []
+    };
+  }
 }
 
 function manualUpdateSummary() {

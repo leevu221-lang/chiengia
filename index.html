@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>Nhập Dữ Liệu Khách Hàng</title>
+  <title>Nhập Dữ Liệu &amp; Báo Cáo Tổng Hợp Chiến Giá</title>
   <!-- Google Font: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,26 +55,30 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 24px 16px;
+      padding: 20px 14px;
     }
 
     /* Container Card chính chuẩn theo hình */
     .card {
       width: 100%;
-      max-width: 440px;
+      max-width: 450px;
       background: var(--card-bg);
       border-radius: var(--radius-card);
       box-shadow: var(--card-shadow);
       border: 1px solid var(--card-border);
       overflow: hidden;
       position: relative;
-      animation: fadeIn 0.35s ease-out;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .report-card {
+      max-width: 500px;
     }
 
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(10px);
       }
       to {
         opacity: 1;
@@ -85,7 +89,7 @@
     /* Header Form */
     .card-header {
       background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-      padding: 24px 20px 18px;
+      padding: 22px 20px 16px;
       text-align: center;
       border-bottom: 1.5px solid var(--primary-border);
       position: relative;
@@ -101,12 +105,61 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .card-header .icon-clip {
       font-size: 1.35rem;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+    }
+
+    /* Top navigation bar in Report Header */
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .btn-nav-icon {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--primary-border);
+      border-radius: 9999px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--forest-title);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-nav-icon:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-nav-refresh {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--primary-border);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--forest-title);
+    }
+
+    .btn-nav-refresh:hover {
+      background: #ffffff;
+      transform: rotate(90deg);
     }
 
     /* Badge Đồng hồ thời gian thực */
@@ -115,9 +168,9 @@
       align-items: center;
       gap: 6px;
       background: #ffffff;
-      padding: 6px 16px;
+      padding: 5px 16px;
       border-radius: 9999px;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 600;
       color: var(--dark-green);
       box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12);
@@ -126,8 +179,8 @@
     }
 
     .pulse-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       background-color: #10b981;
       border-radius: 50%;
       display: inline-block;
@@ -136,29 +189,23 @@
     }
 
     @keyframes pulsing {
-      0% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-      }
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
     /* Nội dung Form */
     .card-body {
-      padding: 24px 22px;
+      padding: 22px 20px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
       text-align: left;
     }
 
@@ -218,21 +265,6 @@
       border-color: var(--input-focus-border);
       box-shadow: 0 0 0 3.5px var(--input-focus-ring);
       background: #ffffff;
-    }
-
-    /* Textarea Sản phẩm & lý do ra về */
-    textarea.form-input {
-      height: 78px;
-      padding-top: 12px;
-      padding-bottom: 12px;
-      resize: vertical;
-      line-height: 1.45;
-      min-height: 60px;
-    }
-
-    .textarea-wrapper .input-icon {
-      top: 14px;
-      align-items: flex-start;
     }
 
     /* KHỐI Ô TICK "CHIẾN GIÁ" (MẶC ĐỊNH FALSE) */
@@ -344,12 +376,12 @@
     /* Nút Submit Lưu Thông Tin */
     .btn-submit {
       width: 100%;
-      height: 52px;
+      height: 50px;
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
       border: none;
       border-radius: var(--radius-btn);
-      font-size: 1.05rem;
+      font-size: 1.02rem;
       font-weight: 700;
       display: flex;
       align-items: center;
@@ -358,7 +390,7 @@
       cursor: pointer;
       box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
       transition: var(--transition);
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     .btn-submit:hover:not(:disabled) {
@@ -399,7 +431,7 @@
       margin: 4px 0;
     }
 
-    /* Nút Xem Kết Quả (Trang Tính) */
+    /* Nút Xem Kết Quả */
     .btn-sheet {
       width: 100%;
       height: 44px;
@@ -414,6 +446,7 @@
       justify-content: center;
       gap: 8px;
       text-decoration: none;
+      cursor: pointer;
       transition: var(--transition);
     }
 
@@ -454,35 +487,15 @@
     }
 
     @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+      from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    .toast.success {
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1.5px solid #a7f3d0;
-    }
+    .toast.success { background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; }
+    .toast.error { background: #fef2f2; color: #991b1b; border: 1.5px solid #fecaca; }
+    .toast.info { background: #f0fdf4; color: #166534; border: 1.5px solid #bbf7d0; }
 
-    .toast.error {
-      background: #fef2f2;
-      color: #991b1b;
-      border: 1.5px solid #fecaca;
-    }
-
-    .toast.info {
-      background: #f0fdf4;
-      color: #166534;
-      border: 1.5px solid #bbf7d0;
-    }
-
-    /* Spinner xoay khi lưu */
+    /* Spinner xoay */
     .spinner {
       width: 20px;
       height: 20px;
@@ -495,6 +508,269 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* =========================================================================
+       GIAO DIỆN FORM BÁO CÁO TỔNG HỢP THEO NHÂN VIÊN & CHỌN NGÀY
+       ========================================================================= */
+    .filter-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .filter-label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .date-input {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1e293b;
+      outline: none;
+      background: #ffffff;
+      transition: var(--transition);
+    }
+
+    .date-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--input-focus-ring);
+    }
+
+    .quick-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pill-btn {
+      padding: 5px 12px;
+      border-radius: 9999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .pill-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .pill-btn.active {
+      background: #10b981;
+      border-color: #059669;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+    }
+
+    /* Lưới KPI thống kê tổng */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .kpi-box {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: left;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      transition: var(--transition);
+    }
+
+    .kpi-box.highlight {
+      background: #f0fdf4;
+      border-color: #a7f3d0;
+    }
+
+    .kpi-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .kpi-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kpi-box.highlight .kpi-value {
+      color: #047857;
+    }
+
+    /* Danh sách nhân viên */
+    .staff-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--forest-title);
+      padding: 0 4px;
+      margin-top: 4px;
+    }
+
+    .staff-cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .staff-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .staff-card:hover {
+      border-color: var(--primary-border);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+      background: #fafdfc;
+    }
+
+    .staff-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .staff-name {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .staff-rate {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 2px 8px;
+      border-radius: 8px;
+      border: 1px solid #a7f3d0;
+    }
+
+    .staff-stats-row {
+      display: flex;
+      gap: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+
+    .badge-stat {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .badge-stat.chien-gia {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge-stat.thuong {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .badge-stat.tong {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    /* Thanh tiến trình % chiến giá */
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Chi tiết đơn con bên trong nhân viên */
+    .staff-orders-detail {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .order-sub-item {
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 35px 20px;
+      color: #64748b;
+      font-size: 0.92rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .empty-state-icon {
+      font-size: 2.2rem;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -502,8 +778,10 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Form Container -->
-  <div class="card">
+  <!-- =========================================================================
+       VIEW 1: FORM NHẬP LIỆU KHÁCH HÀNG (MẶC ĐỊNH)
+       ========================================================================= -->
+  <div class="card" id="formView">
     
     <!-- Header -->
     <div class="card-header">
@@ -622,28 +900,126 @@
       <!-- Phân cách -->
       <div class="divider"></div>
 
-      <!-- Nút Xem Kết Quả Trang Tính (Gắn link cố định của bạn) -->
+      <!-- Nút Xem Báo Cáo Tổng Hợp (Chuyển sang form tổng hợp theo yêu cầu) -->
+      <button
+        type="button"
+        class="btn-sheet"
+        id="btnViewReport"
+        onclick="openReportView()"
+      >
+        <span>📊</span> <span>Xem Kết Quả (Tổng Hợp) ↗</span>
+      </button>
+
+    </form>
+  </div>
+
+
+  <!-- =========================================================================
+       VIEW 2: FORM BÁO CÁO TỔNG HỢP THEO NHÂN VIÊN & CHỌN NGÀY
+       ========================================================================= -->
+  <div class="card report-card" id="reportView" style="display:none;">
+    
+    <!-- Header Báo Cáo -->
+    <div class="card-header">
+      <div class="header-nav">
+        <button type="button" class="btn-nav-icon" onclick="openFormView()">
+          <span>⬅️</span> <span>Nhập Liệu</span>
+        </button>
+        <button type="button" class="btn-nav-refresh" onclick="loadReportData(true)" title="Làm mới dữ liệu">
+          🔄
+        </button>
+      </div>
+      <h1>
+        <span class="icon-clip">📊</span> BÁO CÁO TỔNG HỢP
+      </h1>
+      <div class="clock-badge">
+        <span id="reportHeaderDate">Đang tải dữ liệu...</span>
+      </div>
+    </div>
+
+    <!-- Body Báo Cáo -->
+    <div class="card-body">
+      
+      <!-- Bộ Lọc Ngày -->
+      <div class="filter-section">
+        <div class="filter-row">
+          <label class="filter-label" for="filterDate">
+            <span>📅</span> <span>Chọn Ngày:</span>
+          </label>
+          <input type="date" id="filterDate" class="date-input" onchange="onDatePickerChange()">
+        </div>
+        <div class="quick-pills">
+          <button type="button" class="pill-btn active" id="pillToday" onclick="filterByToday()">Hôm nay</button>
+          <button type="button" class="pill-btn" id="pillAll" onclick="filterByAll()">Tất cả các ngày</button>
+        </div>
+      </div>
+
+      <!-- Lưới KPI Thống Kê Tổng Quan -->
+      <div class="kpi-grid">
+        <div class="kpi-box">
+          <div class="kpi-title">🎯 Tổng Số Đơn</div>
+          <div class="kpi-value" id="kpiTotal">0</div>
+        </div>
+        <div class="kpi-box highlight">
+          <div class="kpi-title">⚔️ Đơn Chiến Giá</div>
+          <div class="kpi-value" id="kpiChienGia">0</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-title">🏷️ Không Chiến Giá</div>
+          <div class="kpi-value" id="kpiKhongChienGia">0</div>
+        </div>
+        <div class="kpi-box highlight">
+          <div class="kpi-title">📈 Tỷ Lệ Chiến Giá</div>
+          <div class="kpi-value" id="kpiTyLe">0%</div>
+        </div>
+      </div>
+
+      <!-- Tiêu đề danh sách nhân viên -->
+      <div class="staff-list-header">
+        <span>👥 TỔNG HỢP THEO NHÂN VIÊN</span>
+        <span id="staffCountBadge" style="font-size:0.8rem; font-weight:600; color:#64748b;">0 nhân viên</span>
+      </div>
+
+      <!-- Container Danh Sách Thẻ Nhân Viên -->
+      <div class="staff-cards-container" id="staffCardsContainer">
+        <!-- Được sinh động bằng JavaScript -->
+      </div>
+
+      <!-- Phân cách -->
+      <div class="divider"></div>
+
+      <!-- Nút hành động phía dưới -->
+      <button type="button" class="btn-submit" onclick="openFormView()">
+        <span>➕</span> <span>Nhập Khách Hàng Mới</span>
+      </button>
+
       <a
         href="https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing"
         target="_blank"
         rel="noopener noreferrer"
         class="btn-sheet"
-        id="linkSpreadsheet"
       >
-        <span>📊</span> <span>Xem Kết Quả (Trang Tính) ↗</span>
+        <span>📑</span> <span>Mở Trên Google Sheet Gốc ↗</span>
       </a>
 
-    </form>
+    </div>
   </div>
+
 
   <script>
     // =========================================================================
-    // 2 ĐƯỜNG LINK CỐ ĐỊNH CHÍNH XÁC 100% THEO YÊU CẦU CỦA BẠN
+    // CẤU HÌNH LIÊN KẾT CỐ ĐỊNH CHÍNH XÁC 100%
     // =========================================================================
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxE2Rm3_eyImKCAX5FSJ0BajF7AlaFaxqhlVj4nsgwkXnjtvlMgDiQDCYZ-gt9IJlLB/exec";
     const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing";
+    const GVIZ_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/gviz/tq?tqx=out:json&sheet=DATA";
 
     const STORAGE_KEY_NV = "appscript_cached_nhanvien";
+
+    // Trạng thái dữ liệu báo cáo
+    let rawCustomersList = [];
+    let currentFilterMode = "today"; // "today" | "all" | "date"
+    let selectedFilterDate = ""; // format yyyy-mm-dd
 
     // 1. Đồng hồ thời gian thực (Live Clock)
     function updateClock() {
@@ -667,13 +1043,20 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Khôi phục Dữ liệu Cũ & Phím tắt
+    // 2. Khởi tạo khi trang tải
     window.addEventListener('DOMContentLoaded', () => {
       const savedNV = localStorage.getItem(STORAGE_KEY_NV);
       const inputNV = document.getElementById('nhanVien');
       if (savedNV && inputNV) {
         inputNV.value = savedNV;
       }
+
+      // Khởi tạo ngày hôm nay cho bộ lọc
+      const today = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      selectedFilterDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+      const filterInput = document.getElementById('filterDate');
+      if (filterInput) filterInput.value = selectedFilterDate;
 
       setupKeyboardShortcuts();
     });
@@ -709,7 +1092,6 @@
     // 4. Thiết lập phím tắt bàn phím
     function setupKeyboardShortcuts() {
       document.addEventListener('keydown', (e) => {
-        // Ctrl + Enter hoặc Cmd + Enter: Lưu Form
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
           const form = document.getElementById('customerForm');
@@ -832,7 +1214,6 @@
         return;
       }
 
-      // Lưu lại Mã NV vào LocalStorage cho các lần sau
       if (nhanVien) {
         localStorage.setItem(STORAGE_KEY_NV, nhanVien);
       }
@@ -901,7 +1282,6 @@
       }
     }
 
-    // Đặt trạng thái nút Submit khi đang gửi
     function setSubmittingState(isSubmitting) {
       const btn = document.getElementById('btnSubmit');
 
@@ -914,7 +1294,6 @@
       }
     }
 
-    // Làm mới Form sau khi lưu thành công (giữ nguyên Nhân Viên để thao tác nhanh)
     function resetFormAfterSave() {
       document.getElementById('khachHang').value = "";
       document.getElementById('sdt').value = "";
@@ -925,6 +1304,291 @@
       onCheckboxChange();
 
       document.getElementById('khachHang').focus();
+    }
+
+    // =========================================================================
+    // ĐIỀU HƯỚNG CHUYỂN ĐỔI GIỮA 2 FORM (NHẬP LIỆU <-> TỔNG HỢP)
+    // =========================================================================
+    function openFormView() {
+      document.getElementById('reportView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+    }
+
+    function openReportView() {
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('reportView').style.display = 'block';
+      loadReportData();
+    }
+
+    // =========================================================================
+    // TẢI & TỔNG HỢP DỮ LIỆU THEO NHÂN VIÊN & THEO NGÀY
+    // =========================================================================
+    async function loadReportData(forceToast = false) {
+      const headerDateEl = document.getElementById('reportHeaderDate');
+      headerDateEl.textContent = "Đang đồng bộ dữ liệu mới...";
+
+      try {
+        // Sử dụng Google Visualization API trực tiếp từ Sheet DATA
+        const queryUrl = GVIZ_URL + "&t=" + new Date().getTime();
+        const res = await fetch(queryUrl);
+        const text = await res.text();
+
+        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+        if (jsonMatch && jsonMatch[1]) {
+          const parsed = JSON.parse(jsonMatch[1]);
+          const rows = parsed.table ? parsed.table.rows : [];
+          parseGvizToCustomers(rows);
+          renderFilteredReport();
+          if (forceToast) showToast("Đã làm mới dữ liệu thành công!", "success");
+        } else {
+          fallbackLoadViaAppsScript(forceToast);
+        }
+      } catch (e) {
+        fallbackLoadViaAppsScript(forceToast);
+      }
+    }
+
+    // Dự phòng gọi qua Apps Script
+    function fallbackLoadViaAppsScript(forceToast) {
+      const cbName = "report_cb_" + Math.round(100000 * Math.random());
+      window[cbName] = function(res) {
+        delete window[cbName];
+        if (res && res.success && res.list) {
+          rawCustomersList = res.list;
+          renderFilteredReport();
+          if (forceToast) showToast("Đã tải dữ liệu qua Apps Script!", "success");
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport&callback=' + cbName;
+      document.body.appendChild(script);
+    }
+
+    // Chuyển đổi dữ liệu từ GViz
+    function parseGvizToCustomers(rows) {
+      const list = [];
+      const pad = (n) => String(n).padStart(2, '0');
+
+      rows.forEach((r, idx) => {
+        const c = r.c || [];
+        const stt = c[0] ? (c[0].v || idx + 1) : idx + 1;
+        const khachHang = c[1] ? (c[1].v || "") : "";
+        const sdt = c[2] ? String(c[2].v || "").replace(/^'/, "") : "";
+        const nhanVien = c[3] ? String(c[3].v || "Chưa phân công") : "Chưa phân công";
+        const chienGiaVal = c[4] ? String(c[4].v || "").toLowerCase() : "";
+        const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
+
+        // Xử lý Time
+        let fullTimeStr = "";
+        let dateKey = ""; // yyyy-mm-dd
+        let dateDisplay = ""; // dd/mm/yyyy
+
+        const timeCell = c[5];
+        if (timeCell) {
+          if (timeCell.f) {
+            fullTimeStr = timeCell.f; // e.g. "22/09/2026 14:36:31"
+            if (fullTimeStr.includes(" ")) {
+              const datePart = fullTimeStr.split(" ")[0];
+              const parts = datePart.split("/");
+              if (parts.length === 3) {
+                dateKey = `${parts[2]}-${pad(parts[1])}-${pad(parts[0])}`;
+                dateDisplay = datePart;
+              }
+            }
+          } else if (typeof timeCell.v === "string" && timeCell.v.startsWith("Date(")) {
+            const nums = timeCell.v.replace("Date(", "").replace(")", "").split(",").map(Number);
+            const d = new Date(nums[0], nums[1], nums[2], nums[3] || 0, nums[4] || 0, nums[5] || 0);
+            fullTimeStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            dateDisplay = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+          } else if (timeCell.v) {
+            fullTimeStr = String(timeCell.v);
+            dateDisplay = fullTimeStr.split(" ")[0];
+          }
+        }
+
+        const sanPham = c[6] ? String(c[6].v || "") : "";
+
+        if (khachHang || sdt) {
+          list.push({
+            stt: stt,
+            khachHang: khachHang,
+            sdt: sdt,
+            nhanVien: nhanVien,
+            chienGia: isChienGia,
+            time: fullTimeStr,
+            dateKey: dateKey,
+            dateDisplay: dateDisplay,
+            sanPham: sanPham
+          });
+        }
+      });
+
+      rawCustomersList = list;
+    }
+
+    // Các hàm chọn ngày
+    function filterByToday() {
+      currentFilterMode = "today";
+      const today = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      selectedFilterDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+      document.getElementById('filterDate').value = selectedFilterDate;
+
+      document.getElementById('pillToday').classList.add('active');
+      document.getElementById('pillAll').classList.remove('active');
+      renderFilteredReport();
+    }
+
+    function filterByAll() {
+      currentFilterMode = "all";
+      document.getElementById('pillToday').classList.remove('active');
+      document.getElementById('pillAll').classList.add('active');
+      renderFilteredReport();
+    }
+
+    function onDatePickerChange() {
+      const val = document.getElementById('filterDate').value;
+      if (val) {
+        selectedFilterDate = val;
+        currentFilterMode = "date";
+        document.getElementById('pillToday').classList.remove('active');
+        document.getElementById('pillAll').classList.remove('active');
+        renderFilteredReport();
+      }
+    }
+
+    // Hiển thị báo cáo đã lọc
+    function renderFilteredReport() {
+      const headerDateEl = document.getElementById('reportHeaderDate');
+      let filteredList = [];
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const today = new Date();
+      const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+      if (currentFilterMode === "today") {
+        filteredList = rawCustomersList.filter(item => item.dateKey === todayKey || item.dateDisplay.includes(`${pad(today.getDate())}/${pad(today.getMonth() + 1)}`));
+        headerDateEl.textContent = `Hôm nay: ${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${today.getFullYear()}`;
+      } else if (currentFilterMode === "all") {
+        filteredList = rawCustomersList;
+        headerDateEl.textContent = `Toàn bộ thời gian (${rawCustomersList.length} đơn)`;
+      } else {
+        const parts = selectedFilterDate.split("-");
+        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        filteredList = rawCustomersList.filter(item => item.dateKey === selectedFilterDate || item.dateDisplay === formattedDate);
+        headerDateEl.textContent = `Ngày: ${formattedDate}`;
+      }
+
+      // 1. Tính toán KPIs tổng quan
+      const totalCount = filteredList.length;
+      const chienGiaCount = filteredList.filter(i => i.chienGia).length;
+      const khongChienGiaCount = totalCount - chienGiaCount;
+      const tyLe = totalCount > 0 ? Math.round((chienGiaCount / totalCount) * 1000) / 10 : 0;
+
+      document.getElementById('kpiTotal').textContent = totalCount;
+      document.getElementById('kpiChienGia').textContent = chienGiaCount;
+      document.getElementById('kpiKhongChienGia').textContent = khongChienGiaCount;
+      document.getElementById('kpiTyLe').textContent = `${tyLe}%`;
+
+      // 2. Gom nhóm theo từng Nhân Viên
+      const staffMap = {};
+      filteredList.forEach(item => {
+        const nv = item.nhanVien || "Chưa phân công";
+        if (!staffMap[nv]) {
+          staffMap[nv] = {
+            nhanVien: nv,
+            chienGia: 0,
+            khongChienGia: 0,
+            total: 0,
+            orders: []
+          };
+        }
+        if (item.chienGia) {
+          staffMap[nv].chienGia++;
+        } else {
+          staffMap[nv].khongChienGia++;
+        }
+        staffMap[nv].total++;
+        staffMap[nv].orders.push(item);
+      });
+
+      const staffList = Object.values(staffMap);
+      // Sắp xếp theo nhân viên có nhiều đơn nhất
+      staffList.sort((a, b) => b.total - a.total);
+
+      document.getElementById('staffCountBadge').textContent = `${staffList.length} nhân viên`;
+
+      // 3. Hiển thị thẻ danh sách nhân viên
+      const container = document.getElementById('staffCardsContainer');
+      container.innerHTML = "";
+
+      if (staffList.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">🌱</span>
+            <span>Không có dữ liệu đơn hàng trong ngày đã chọn!</span>
+          </div>
+        `;
+        return;
+      }
+
+      staffList.forEach((st, idx) => {
+        const rate = st.total > 0 ? Math.round((st.chienGia / st.total) * 1000) / 10 : 0;
+        const cardId = `staff_detail_${idx}`;
+
+        const card = document.createElement('div');
+        card.className = "staff-card";
+        card.innerHTML = `
+          <div class="staff-card-top" onclick="toggleStaffDetails('${cardId}')">
+            <div class="staff-name">
+              <span>👔</span> <span>${escapeHtml(st.nhanVien)}</span>
+            </div>
+            <div class="staff-rate">${rate}% Chiến Giá</div>
+          </div>
+          <div class="staff-stats-row" onclick="toggleStaffDetails('${cardId}')">
+            <span class="badge-stat chien-gia">⚔️ ${st.chienGia} chiến giá</span>
+            <span class="badge-stat thuong">🏷️ ${st.khongChienGia} thường</span>
+            <span class="badge-stat tong">Tổng: ${st.total} đơn</span>
+          </div>
+          <div class="progress-bar-bg" onclick="toggleStaffDetails('${cardId}')">
+            <div class="progress-bar-fill" style="width: ${rate}%;"></div>
+          </div>
+          <div class="staff-orders-detail" id="${cardId}">
+            ${st.orders.map(o => `
+              <div class="order-sub-item">
+                <div>
+                  <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
+                  <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
+                  ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>
+                  <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">${o.time || ''}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleStaffDetails(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
   </script>
 </body>
