@@ -292,8 +292,17 @@ function ensureSummarySheetHeader(sheet) {
 }
 
 /**
+ * Tự động viết hoa chữ cái đầu cho mỗi từ (VD: nguyễn lý huỳnh -> Nguyễn Lý Huỳnh)
+ */
+function autoCapitalizeWords(str) {
+  if (!str) return "";
+  return str.toString().trim().replace(/(^|[\s\-_(])(\p{L})/gu, function(match, p1, p2) {
+    return p1 + p2.toUpperCase();
+  });
+}
+
+/**
  * 4. HÀM CHÍNH LƯU DỮ LIỆU VÀO SHEET "DATA"
- * Khớp chuẩn xác theo các cột trong hình:
  * Cột 1 (A): STT
  * Cột 2 (B): KHÁCH HÀNG
  * Cột 3 (C): SĐT (giữ nguyên số 0 ở đầu)
@@ -301,6 +310,7 @@ function ensureSummarySheetHeader(sheet) {
  * Cột 5 (E): Chiến Giá (Có / Không)
  * Cột 6 (F): Time (dd/MM/yyyy HH:mm:ss)
  * Cột 7 (G): Sản Phẩm Chính
+ * Cột 8 (H): GIÁ SẢN PHẨM
  */
 function saveCustomerData(formData) {
   // Chống ghi đè đồng thời
@@ -318,8 +328,8 @@ function saveCustomerData(formData) {
     // Đảm bảo hàng tiêu đề chuẩn
     ensureDataSheetHeader(sheetData);
 
-    // Chuẩn hóa dữ liệu
-    const khachHang = (formData.khachHang || "").trim();
+    // Chuẩn hóa dữ liệu & Tự động viết hoa chữ cái đầu cho Khách Hàng & Sản Phẩm Chính
+    const khachHang = autoCapitalizeWords(formData.khachHang || "");
     if (!khachHang) {
       return { success: false, message: "Vui lòng nhập tên Khách hàng!" };
     }
@@ -332,7 +342,7 @@ function saveCustomerData(formData) {
     const sdtFormatted = sdtRaw.startsWith("'") ? sdtRaw : `'${sdtRaw}`;
 
     const nhanVien = (formData.nhanVien || "").trim() || "Chưa phân công";
-    const sanPham = (formData.sanPham || "").trim();
+    const sanPham = autoCapitalizeWords(formData.sanPham || "");
     const giaSanPham = (formData.giaSanPham || "").trim();
     const isChienGia = Boolean(formData.chienGia);
     const chienGiaText = isChienGia ? "Có" : "Không";
