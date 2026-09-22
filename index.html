@@ -1369,6 +1369,12 @@
       border-color: #10b981;
     }
 
+    /* Ẩn hoàn toàn icon bánh răng khi ở chế độ Nhân Viên */
+    body.employee-mode .btn-gear-settings,
+    body.employee-mode #btnGearSettingsReport {
+      display: none !important;
+    }
+
     /* Modal Cài Đặt Sheet */
     .settings-modal-box {
       max-width: 500px;
@@ -1497,8 +1503,8 @@
     
     <!-- Header -->
     <div class="card-header">
-      <button type="button" class="btn-gear-settings" onclick="openSettingsModal()" title="Cài đặt Google Sheet">⚙️</button>
-      <h1>
+      <button type="button" class="btn-gear-settings" id="btnGearSettingsForm" onclick="openSettingsModal()" title="Cài đặt Google Sheet">⚙️</button>
+      <h1 onclick="handleSecretAdminTap()" style="user-select:none;" title="">
         <span class="icon-clip">📋</span> NHẬP DỮ LIỆU KHÁCH HÀNG
       </h1>
       <div class="clock-badge">
@@ -1665,7 +1671,7 @@
       </div>
 
       <!-- Dòng Footer tác giả -->
-      <div class="app-footer">
+      <div class="app-footer" onclick="handleSecretAdminTap()" style="cursor:pointer; user-select:none;">
         Design by Linh Vũ
       </div>
 
@@ -1685,7 +1691,7 @@
           <span>⬅️</span> <span>Nhập Liệu</span>
         </button>
         <div style="display:flex; gap:6px;">
-          <button type="button" class="btn-nav-refresh" onclick="openSettingsModal()" title="Cài đặt Google Sheet">
+          <button type="button" class="btn-nav-refresh" id="btnGearSettingsReport" onclick="openSettingsModal()" title="Cài đặt Google Sheet">
             ⚙️
           </button>
           <button type="button" class="btn-nav-refresh" onclick="loadReportData(true)" title="Làm mới dữ liệu">
@@ -1693,7 +1699,7 @@
           </button>
         </div>
       </div>
-      <h1>
+      <h1 onclick="handleSecretAdminTap()" style="user-select:none;" title="">
         <span class="icon-clip">📊</span> BÁO CÁO TỔNG HỢP
       </h1>
       <div class="clock-badge">
@@ -1844,7 +1850,7 @@
       </a>
 
       <!-- Dòng Footer tác giả -->
-      <div class="app-footer">
+      <div class="app-footer" onclick="handleSecretAdminTap()" style="cursor:pointer; user-select:none;">
         Design by Linh Vũ
       </div>
 
@@ -2060,10 +2066,57 @@
             }
           }
         }
+
+        // Nhận diện chế độ Nhân viên vs Quản trị viên
+        const hasAdminParam = urlParams.has('admin') || urlParams.get('role') === 'admin';
+        const hasShopParam = Boolean(paramS || paramSheet);
+        
+        // Nếu vào qua link chia sẻ (?s=... hoặc ?sheet=...) và không có ?admin -> Tự động ẩn icon bánh răng
+        if (hasShopParam && !hasAdminParam) {
+          localStorage.setItem("is_employee_mode", "true");
+        } else if (hasAdminParam) {
+          localStorage.removeItem("is_employee_mode");
+        }
+
+        const isEmployee = (localStorage.getItem("is_employee_mode") === "true") && !hasAdminParam;
+        if (isEmployee) {
+          document.body.classList.add('employee-mode');
+        } else {
+          document.body.classList.remove('employee-mode');
+        }
       } catch (err) {
         console.warn("Lỗi khởi tạo context shop:", err);
       }
     })();
+
+    // Chạm bí mật 3 lần vào Tiêu Đề hoặc Footer để mở Cài Đặt (dành riêng cho Chủ Shop / Admin)
+    let secretTapCount = 0;
+    let secretTapTimer = null;
+    function handleSecretAdminTap() {
+      secretTapCount++;
+      clearTimeout(secretTapTimer);
+      secretTapTimer = setTimeout(() => {
+        secretTapCount = 0;
+      }, 1400);
+
+      if (secretTapCount >= 3) {
+        secretTapCount = 0;
+        document.body.classList.remove('employee-mode');
+        localStorage.removeItem('is_employee_mode');
+        showToast("🔓 Đã mở bảng Cài Đặt Quản Trị Viên!", "success");
+        openSettingsModal();
+      }
+    }
+
+    // Phím tắt bàn phím: Ctrl + Shift + S hoặc Cmd + Shift + S mở nhanh Cài Đặt
+    window.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        document.body.classList.remove('employee-mode');
+        localStorage.removeItem('is_employee_mode');
+        openSettingsModal();
+      }
+    });
 
     function getSpreadsheetUrl() {
       return "https://docs.google.com/spreadsheets/d/" + currentSheetId + "/edit?usp=sharing";
