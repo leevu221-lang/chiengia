@@ -179,7 +179,7 @@ function getOrCreateSheet(ss, sheetName) {
  * Col D: NHÂN VIÊN
  * Col E: Chiến Giá
  * Col F: Time
- * Col G: Sản Phẩm & Lý Do Ra Về
+ * Col G: Sản Phẩm Chính
  */
 function ensureDataSheetHeader(sheet) {
   const lastRow = sheet.getLastRow();
@@ -187,7 +187,7 @@ function ensureDataSheetHeader(sheet) {
 
   if (lastRow === 0) {
     // Nếu sheet hoàn toàn trống, tạo hàng tiêu đề chuẩn
-    const headers = ["STT", "KHÁCH HÀNG", "SĐT", "NHÂN VIÊN", "Chiến Giá", "Time", "Sản Phẩm & Lý Do Ra Về"];
+    const headers = ["STT", "KHÁCH HÀNG", "SĐT", "NHÂN VIÊN", "Chiến Giá", "Time", "Sản Phẩm Chính"];
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setValues([headers]);
     headerRange
@@ -201,10 +201,10 @@ function ensureDataSheetHeader(sheet) {
     sheet.setRowHeight(1, 38);
     sheet.setFrozenRows(1);
   } else {
-    // Nếu đã có hàng tiêu đề (như trong ảnh của bạn), kiểm tra xem cột G đã có "Sản Phẩm & Lý Do Ra Về" chưa
+    // Nếu đã có hàng tiêu đề (như trong ảnh của bạn), kiểm tra xem cột G đã có "Sản Phẩm Chính" chưa
     const headerG = sheet.getRange(1, 7).getValue().toString().trim();
-    if (!headerG) {
-      sheet.getRange(1, 7).setValue("Sản Phẩm & Lý Do Ra Về");
+    if (!headerG || headerG.includes("Sản Phẩm & Lý Do Ra Về")) {
+      sheet.getRange(1, 7).setValue("Sản Phẩm Chính");
       sheet.getRange(1, 7)
         .setBackground(sheet.getRange(1, 6).getBackground() || "#f59e0b")
         .setFontColor(sheet.getRange(1, 6).getFontColor() || "#000000")
@@ -213,7 +213,7 @@ function ensureDataSheetHeader(sheet) {
         .setFontSize(10)
         .setHorizontalAlignment("center")
         .setVerticalAlignment("middle");
-      sheet.setColumnWidth(7, 260);
+      sheet.setColumnWidth(7, 200);
     }
   }
 }
@@ -259,7 +259,7 @@ function ensureSummarySheetHeader(sheet) {
  * Cột 4 (D): NHÂN VIÊN
  * Cột 5 (E): Chiến Giá (Có / Không)
  * Cột 6 (F): Time (dd/MM/yyyy HH:mm:ss)
- * Cột 7 (G): Sản Phẩm & Lý Do Ra Về
+ * Cột 7 (G): Sản Phẩm Chính
  */
 function saveCustomerData(formData) {
   // Chống ghi đè đồng thời

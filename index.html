@@ -557,19 +557,20 @@
         </div>
       </div>
 
-      <!-- Sản Phẩm & Lý Do Ra Về -->
+      <!-- Sản Phẩm Chính -->
       <div class="form-group">
         <label class="form-label" for="sanPham">
-          Sản Phẩm &amp; lý do khách hàng ra về
+          Sản Phẩm Chính
         </label>
-        <div class="input-wrapper textarea-wrapper">
+        <div class="input-wrapper">
           <span class="input-icon">🏷️</span>
-          <textarea
+          <input
+            type="text"
             id="sanPham"
             name="sanPham"
             class="form-input"
-            placeholder="VD: Tivi 32 inch Sony, khách phân vân về giá..."
-          ></textarea>
+            placeholder="VD: Tivi 55 inch Sony, Tủ lạnh Samsung..."
+          >
         </div>
       </div>
 
@@ -719,6 +720,7 @@
       const inputs = [
         document.getElementById('khachHang'),
         document.getElementById('sdt'),
+        document.getElementById('sanPham'),
         document.getElementById('nhanVien')
       ];
 

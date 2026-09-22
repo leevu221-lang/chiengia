@@ -51,13 +51,12 @@ appscript-chien-gia/
 | Cột | Tên Cột | Định dạng | Ví dụ |
 | :---: | :--- | :---: | :--- |
 | **A** | **STT** | Số tự tăng | `1` |
-| **B** | **THỜI GIAN** | `dd/MM/yyyy HH:mm:ss` | `22/09/2026 13:14:36` |
-| **C** | **NGÀY** | `dd/MM/yyyy` | `22/09/2026` |
-| **D** | **KHÁCH HÀNG** | Text | `Nguyễn Văn A` |
-| **E** | **SỐ ĐIỆN THOẠI** | Text (giữ số 0) | `'0987654321` |
-| **F** | **SẢN PHẨM & LÝ DO RA VỀ** | Text | `Tivi 32 inch Sony, khách phân vân về giá` |
-| **G** | **NHÂN VIÊN PHỤ TRÁCH** | Text | `38834` |
-| **H** | **CHIẾN GIÁ** | Badge | `Có` / `Không` |
+| **B** | **KHÁCH HÀNG** | Text | `Nguyễn Văn A` |
+| **C** | **SĐT** | Text (giữ số 0) | `'0987654321` |
+| **D** | **NHÂN VIÊN** | Text | `43751` |
+| **E** | **Chiến Giá** | Badge | `Có` / `Không` |
+| **F** | **Time** | `dd/MM/yyyy HH:mm:ss` | `22/09/2026 14:25:40` |
+| **G** | **Sản Phẩm Chính** | Text | `Tivi 55 inch Sony` |
 
 ### 2. Sheet `TỔNG HỢP`
 | Cột | Tên Cột | Mô tả |
