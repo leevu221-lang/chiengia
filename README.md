@@ -17,6 +17,10 @@ Hệ thống nhập liệu thông tin khách hàng chuyên nghiệp chạy trự
 - **🎯 Ô tick "Chiến Giá" (Mặc định: `false`)**:
   - Thiết kế công tắc chuyển đổi (toggle switch) trực quan.
   - Tự động đánh dấu đơn có chiến giá hoặc không chiến giá.
+- **🔍 Gợi Ý Tự Động Nhân Viên (Autocomplete)**:
+  - Tự động tải danh sách từ sheet **"nhân viên"** trên Google Sheet.
+  - Khi người dùng gõ 1 vài ký tự (tên có dấu, không dấu hoặc mã số nhân viên), popup danh sách gợi ý sẽ lập tức hiển thị.
+  - Hỗ trợ chọn nhanh bằng chuột hoặc phím mũi tên `↑` `↓` và `Enter`.
 - **⚡ Thao tác siêu tốc**:
   - Hỗ trợ phím tắt `Enter` nhảy giữa các ô và `Ctrl + Enter` (hoặc `Cmd + Enter`) để lưu nhanh.
   - Tự động ghi nhớ **Mã nhân viên** vào `localStorage` cho các lượt nhập tiếp theo mà không cần gõ lại.

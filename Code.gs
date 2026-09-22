@@ -100,6 +100,12 @@ function doGet(e) {
     return createJsonResponse(report, e.parameter.callback);
   }
 
+  // 4. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động
+  if (e && e.parameter && (e.parameter.action === "getStaffList" || e.parameter.action === "getStaff")) {
+    const staffData = getStaffList();
+    return createJsonResponse(staffData, e.parameter.callback);
+  }
+
   // 3. Mặc định mở giao diện Web App
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Nhập Dữ Liệu Khách Hàng - Chiến Giá")
@@ -663,4 +669,40 @@ function showHelp() {
     "3. Bảng 'TỔNG HỢP' sẽ tự động đếm số đơn Chiến Giá và Không Chiến Giá theo Ngày và Nhân Viên.",
     ui.ButtonSet.OK
   );
+}
+
+/**
+ * 7. LẤY DANH SÁCH NHÂN VIÊN TỪ SHEET "nhân viên" (Cột B)
+ */
+function getStaffList() {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = getOrCreateSheet(ss, "nhân viên");
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return { success: true, list: [] };
+    }
+
+    // Lấy cột B (từ dòng 2 đến dòng cuối cùng)
+    const values = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+    const list = [];
+    values.forEach(r => {
+      const val = (r[0] || "").toString().trim();
+      if (val && !list.includes(val)) {
+        list.push(val);
+      }
+    });
+
+    return {
+      success: true,
+      list: list
+    };
+  } catch (err) {
+    Logger.log("Lỗi getStaffList: " + err.toString());
+    return {
+      success: false,
+      error: err.toString(),
+      list: []
+    };
+  }
 }

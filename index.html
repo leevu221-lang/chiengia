@@ -1017,6 +1017,106 @@
       flex-direction: column;
       gap: 6px;
     }
+
+    /* Autocomplete Gợi Ý Danh Sách Nhân Viên */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+
+    .suggestions-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px -5px rgba(6, 78, 59, 0.16), 0 2px 6px rgba(0, 0, 0, 0.05);
+      max-height: 230px;
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 4px;
+      animation: dropdownFadeIn 0.16s ease-out;
+    }
+
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .suggestion-item {
+      padding: 9px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: var(--transition);
+      color: #1e293b;
+      border-bottom: 1px solid #f8fafc;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover,
+    .suggestion-item.active {
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .suggestion-item-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .suggestion-item-left .icon {
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .suggestion-name {
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+
+    .suggestion-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #e0f2fe;
+      color: #0369a1;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+
+    .suggestion-item.active .suggestion-badge {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .suggestion-highlight {
+      background: #fef08a;
+      color: #854d0e;
+      border-radius: 2px;
+      font-weight: 800;
+      padding: 0 1px;
+    }
+
+    .suggestions-empty {
+      padding: 12px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #64748b;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -1098,20 +1198,25 @@
         </div>
       </div>
 
-      <!-- Nhân Viên Phụ Trách -->
+      <!-- Nhân Viên Phụ Trách (Hỗ trợ gợi ý tự động từ sheet "nhân viên") -->
       <div class="form-group">
         <label class="form-label" for="nhanVien">
           Nhân Viên Phụ Trách
         </label>
-        <div class="input-wrapper">
+        <div class="input-wrapper autocomplete-wrapper">
           <span class="input-icon">👔</span>
           <input
             type="text"
             id="nhanVien"
             name="nhanVien"
             class="form-input"
-            placeholder="Nhập User/Mã NV hoặc Tên (VD: 38834)"
+            placeholder="Gõ tên hoặc mã NV để chọn gợi ý..."
+            autocomplete="off"
+            oninput="handleStaffInput(this.value)"
+            onfocus="handleStaffFocus()"
+            onkeydown="handleStaffKeydown(event)"
           >
+          <div id="staffSuggestionsDropdown" class="suggestions-dropdown" style="display:none;"></div>
         </div>
       </div>
 
@@ -1327,8 +1432,15 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxE2Rm3_eyImKCAX5FSJ0BajF7AlaFaxqhlVj4nsgwkXnjtvlMgDiQDCYZ-gt9IJlLB/exec";
     const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing";
     const GVIZ_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/gviz/tq?tqx=out:json&sheet=DATA";
+    const GVIZ_NV_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/gviz/tq?tqx=out:json&sheet=nh%C3%A2n%20vi%C3%AAn";
 
     const STORAGE_KEY_NV = "appscript_cached_nhanvien";
+    const STORAGE_KEY_STAFF_LIST = "appscript_master_staff_list";
+
+    // Danh sách nhân viên tải từ sheet "nhân viên"
+    let masterStaffList = [];
+    let currentFilteredSuggestions = [];
+    let suggestionSelectedIndex = -1;
 
     // Trạng thái dữ liệu báo cáo
     let rawCustomersList = [];
@@ -1373,6 +1485,17 @@
       if (filterInput) filterInput.value = selectedFilterDate;
 
       setupKeyboardShortcuts();
+
+      // Tải danh sách nhân viên từ sheet "nhân viên"
+      loadMasterStaffList();
+    });
+
+    // Đóng dropdown gợi ý khi click ra ngoài
+    document.addEventListener('click', (e) => {
+      const wrapper = document.querySelector('.autocomplete-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeStaffDropdown();
+      }
     });
 
     // 3. Xử lý Toggle Checkbox "Chiến Giá"
@@ -1424,6 +1547,11 @@
         if (!input) return;
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
+            const dropdown = document.getElementById('staffSuggestionsDropdown');
+            if (input.id === 'nhanVien' && dropdown && dropdown.style.display === 'block' && currentFilteredSuggestions.length > 0) {
+              // Để handleStaffKeydown xử lý chọn item gợi ý
+              return;
+            }
             e.preventDefault();
             if (index < inputs.length - 1) {
               inputs[index + 1].focus();
@@ -1433,6 +1561,276 @@
           }
         });
       });
+    }
+
+    // =========================================================================
+    // HỆ THỐNG GỢI Ý TỰ ĐỘNG DANH SÁCH NHÂN VIÊN TỪ SHEET "nhân viên"
+    // =========================================================================
+
+    // 1. Tải danh sách nhân viên (ưu tiên GViz real-time + fallback Apps Script)
+    async function loadMasterStaffList() {
+      // Đọc từ Cache trước để form hiển thị ngay lập tức
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY_STAFF_LIST);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            masterStaffList = parsed;
+          }
+        }
+      } catch (e) {}
+
+      // Tải trực tiếp từ Google Visualization API
+      try {
+        const res = await fetch(GVIZ_NV_URL + "&t=" + new Date().getTime());
+        const text = await res.text();
+        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+        if (jsonMatch && jsonMatch[1]) {
+          const parsed = JSON.parse(jsonMatch[1]);
+          const rows = parsed.table ? parsed.table.rows : [];
+          const list = [];
+          rows.forEach(r => {
+            const c = r.c || [];
+            // Cột B (index 1) là cột NHÂN VIÊN
+            const val = c[1] ? String(c[1].v || "").trim() : "";
+            if (val && !list.includes(val)) {
+              list.push(val);
+            }
+          });
+          if (list.length > 0) {
+            masterStaffList = list;
+            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(list));
+            return;
+          }
+        }
+      } catch (err) {}
+
+      // Fallback 1: Nếu mở trong môi trường Google Sheet
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler((res) => {
+          if (res && res.success && res.list && res.list.length > 0) {
+            masterStaffList = res.list;
+            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(res.list));
+          }
+        }).getStaffList();
+        return;
+      }
+
+      // Fallback 2: Gọi JSONP qua Apps Script Web App
+      try {
+        const cbName = "staff_cb_" + Math.round(100000 * Math.random());
+        window[cbName] = function(res) {
+          delete window[cbName];
+          if (res && res.success && res.list && res.list.length > 0) {
+            masterStaffList = res.list;
+            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(res.list));
+          }
+        };
+        const s = document.createElement('script');
+        s.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getStaffList&callback=' + cbName;
+        document.body.appendChild(s);
+      } catch (err) {}
+    }
+
+    // 2. Chuyển tiếng Việt có dấu thành không dấu để tìm kiếm siêu nhạy
+    function removeVietnameseTones(str) {
+      if (!str) return "";
+      str = str.toLowerCase();
+      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+      str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+      str = str.replace(/đ/g, "d");
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // 3. Tách tên và mã nhân viên (VD: "NGUYỄN LÝ HUỲNH - 54984" -> name: "NGUYỄN LÝ HUỲNH", code: "54984")
+    function parseStaffItem(itemStr) {
+      if (!itemStr) return { fullName: "", name: "", code: "" };
+      if (itemStr.includes(" - ")) {
+        const parts = itemStr.split(" - ");
+        return {
+          fullName: itemStr,
+          name: parts[0].trim(),
+          code: parts.slice(1).join(" - ").trim()
+        };
+      } else if (itemStr.includes("-")) {
+        const parts = itemStr.split("-");
+        return {
+          fullName: itemStr,
+          name: parts[0].trim(),
+          code: parts.slice(1).join("-").trim()
+        };
+      }
+      return {
+        fullName: itemStr,
+        name: itemStr,
+        code: ""
+      };
+    }
+
+    // 4. Xử lý khi người dùng gõ ký tự vào ô Nhân Viên
+    function handleStaffInput(val) {
+      const query = (val || "").trim();
+      if (!query) {
+        closeStaffDropdown();
+        return;
+      }
+
+      const normQuery = removeVietnameseTones(query);
+
+      // Lọc các nhân viên khớp theo Tên hoặc Mã số (không phân biệt hoa thường và dấu tiếng Việt)
+      const matches = masterStaffList.filter(item => {
+        const parsed = parseStaffItem(item);
+        const normFull = removeVietnameseTones(item);
+        const normName = removeVietnameseTones(parsed.name);
+        const normCode = removeVietnameseTones(parsed.code);
+
+        return normFull.includes(normQuery) || normName.includes(normQuery) || normCode.includes(normQuery);
+      });
+
+      currentFilteredSuggestions = matches.slice(0, 10);
+      suggestionSelectedIndex = -1;
+      renderStaffSuggestions(query);
+    }
+
+    function handleStaffFocus() {
+      const inputEl = document.getElementById('nhanVien');
+      const val = inputEl ? inputEl.value.trim() : "";
+      if (val) {
+        handleStaffInput(val);
+      }
+    }
+
+    // 5. Hiển thị danh sách gợi ý dropdown
+    function renderStaffSuggestions(query) {
+      const dropdown = document.getElementById('staffSuggestionsDropdown');
+      if (!dropdown) return;
+
+      if (currentFilteredSuggestions.length === 0) {
+        dropdown.innerHTML = `<div class="suggestions-empty">Không tìm thấy nhân viên khớp với "${escapeHtml(query)}"</div>`;
+        dropdown.style.display = "block";
+        return;
+      }
+
+      dropdown.innerHTML = currentFilteredSuggestions.map((item, idx) => {
+        const parsed = parseStaffItem(item);
+        const safeItem = escapeHtml(item).replace(/'/g, "\\'");
+        return `
+          <div
+            class="suggestion-item"
+            id="sugg_item_${idx}"
+            onclick="selectStaffSuggestion('${safeItem}')"
+            onmouseenter="setSuggestionHover(${idx})"
+          >
+            <div class="suggestion-item-left">
+              <span class="icon">👔</span>
+              <span class="suggestion-name">${highlightMatch(parsed.name, query)}</span>
+            </div>
+            ${parsed.code ? `<span class="suggestion-badge">${highlightMatch(parsed.code, query)}</span>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      dropdown.style.display = "block";
+    }
+
+    // Làm nổi bật phần chữ người dùng gõ
+    function highlightMatch(text, query) {
+      if (!query || !text) return escapeHtml(text || "");
+      const normText = removeVietnameseTones(text);
+      const normQuery = removeVietnameseTones(query);
+      const index = normText.indexOf(normQuery);
+
+      if (index === -1) {
+        return escapeHtml(text);
+      }
+
+      const before = text.slice(0, index);
+      const match = text.slice(index, index + query.length);
+      const after = text.slice(index + query.length);
+
+      return `${escapeHtml(before)}<span class="suggestion-highlight">${escapeHtml(match)}</span>${escapeHtml(after)}`;
+    }
+
+    // 6. Khi người dùng click hoặc nhấn Enter chọn 1 nhân viên
+    function selectStaffSuggestion(fullStaffString) {
+      const input = document.getElementById('nhanVien');
+      if (input) {
+        input.value = fullStaffString;
+        localStorage.setItem(STORAGE_KEY_NV, fullStaffString);
+      }
+      closeStaffDropdown();
+
+      // Di chuyển sang toggle chiến giá hoặc submit
+      const btnSubmit = document.getElementById('btnSubmit');
+      if (btnSubmit) btnSubmit.focus();
+    }
+
+    function closeStaffDropdown() {
+      const dropdown = document.getElementById('staffSuggestionsDropdown');
+      if (dropdown) {
+        dropdown.style.display = "none";
+        dropdown.innerHTML = "";
+      }
+      currentFilteredSuggestions = [];
+      suggestionSelectedIndex = -1;
+    }
+
+    function setSuggestionHover(idx) {
+      suggestionSelectedIndex = idx;
+      updateSuggestionHighlight();
+    }
+
+    function updateSuggestionHighlight() {
+      currentFilteredSuggestions.forEach((_, idx) => {
+        const el = document.getElementById(`sugg_item_${idx}`);
+        if (el) {
+          if (idx === suggestionSelectedIndex) {
+            el.classList.add('active');
+            el.scrollIntoView({ block: 'nearest' });
+          } else {
+            el.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    // 7. Hỗ trợ phím Mũi tên Lên / Xuống / Enter / Esc khi đang chọn gợi ý
+    function handleStaffKeydown(e) {
+      const dropdown = document.getElementById('staffSuggestionsDropdown');
+      const isOpen = dropdown && dropdown.style.display === "block" && currentFilteredSuggestions.length > 0;
+
+      if (e.key === "ArrowDown") {
+        if (isOpen) {
+          e.preventDefault();
+          suggestionSelectedIndex = (suggestionSelectedIndex + 1) % currentFilteredSuggestions.length;
+          updateSuggestionHighlight();
+        } else {
+          handleStaffFocus();
+        }
+      } else if (e.key === "ArrowUp") {
+        if (isOpen) {
+          e.preventDefault();
+          suggestionSelectedIndex = (suggestionSelectedIndex - 1 + currentFilteredSuggestions.length) % currentFilteredSuggestions.length;
+          updateSuggestionHighlight();
+        }
+      } else if (e.key === "Enter") {
+        if (isOpen && suggestionSelectedIndex >= 0 && suggestionSelectedIndex < currentFilteredSuggestions.length) {
+          e.preventDefault();
+          selectStaffSuggestion(currentFilteredSuggestions[suggestionSelectedIndex]);
+        } else if (isOpen && currentFilteredSuggestions.length === 1) {
+          e.preventDefault();
+          selectStaffSuggestion(currentFilteredSuggestions[0]);
+        }
+      } else if (e.key === "Escape") {
+        if (isOpen) {
+          e.preventDefault();
+          closeStaffDropdown();
+        }
+      }
     }
 
     // 5. Âm thanh Web Audio phản hồi nhẹ nhàng
@@ -1501,6 +1899,7 @@
     // 7. Xử lý gửi Form: Kết nối thẳng đến SCRIPT_URL
     async function handleFormSubmit(event) {
       event.preventDefault();
+      closeStaffDropdown();
 
       const khachHangEl = document.getElementById('khachHang');
       const sdtEl = document.getElementById('sdt');
@@ -1625,11 +2024,13 @@
     let currentStaffDisplayMode = "table"; // "table" | "cards"
 
     function openFormView() {
+      closeStaffDropdown();
       document.getElementById('reportView').style.display = 'none';
       document.getElementById('formView').style.display = 'block';
     }
 
     function openReportView(mode = 'table') {
+      closeStaffDropdown();
       document.getElementById('formView').style.display = 'none';
       document.getElementById('reportView').style.display = 'block';
       setStaffDisplayMode(mode);
