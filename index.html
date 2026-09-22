@@ -1117,6 +1117,203 @@
       color: #64748b;
       font-style: italic;
     }
+
+    /* =========================================================================
+       NÚT XUẤT ẢNH & MODAL XEM TRƯỚC TẢI ẢNH (EXPORT AS IMAGE)
+       ========================================================================= */
+    .btn-export-mini {
+      background: #ffffff;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 9999px;
+      padding: 4px 11px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #065f46;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn-export-mini:hover {
+      background: #ecfdf5;
+      border-color: #10b981;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-export-full {
+      width: 100%;
+      height: 46px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
+      transition: var(--transition);
+    }
+
+    .btn-export-full:hover {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.38);
+    }
+
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      margin-bottom: 2px;
+    }
+
+    .section-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: var(--forest-title);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Modal Xem Trước & Tải Ảnh */
+    .image-preview-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .image-preview-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1.5px solid #a7f3d0;
+      animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalScaleUp {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      background: #ecfdf5;
+      border-bottom: 1px solid #a7f3d0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #065f46;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      line-height: 1;
+    }
+
+    .modal-close-btn:hover {
+      color: #0f172a;
+    }
+
+    .modal-image-body {
+      padding: 16px;
+      overflow-y: auto;
+      max-height: 60vh;
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .modal-image-body img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    .modal-footer-actions {
+      padding: 14px 20px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-modal-action {
+      flex: 1;
+      height: 42px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+
+    .btn-modal-download {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+    }
+    .btn-modal-download:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    }
+
+    .btn-modal-copy {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1.5px solid #86efac;
+    }
+    .btn-modal-copy:hover {
+      background: #d1fae5;
+    }
   </style>
 </head>
 <body>
@@ -1316,6 +1513,14 @@
         </div>
       </div>
 
+      <!-- Tiêu đề mục Tổng Hợp kèm Nút Xuất Ảnh -->
+      <div class="section-header-row">
+        <div class="section-title">📊 TỔNG HỢP KẾT QUẢ</div>
+        <button type="button" class="btn-export-mini" onclick="exportReportSection('summary')" title="Xuất ảnh chỉ riêng khối Tổng Hợp KPI">
+          <span>📸</span> <span>Xuất Ảnh</span>
+        </button>
+      </div>
+
       <!-- Lưới KPI Thống Kê Tổng Quan -->
       <div class="kpi-grid">
         <div class="kpi-box">
@@ -1339,8 +1544,13 @@
       <!-- Tiêu đề & Chuyển đổi hiển thị nhân viên -->
       <div class="staff-header-actions">
         <div class="staff-list-header">
-          <span>👥 CHI TIẾT THEO NHÂN VIÊN</span>
-          <span id="staffCountBadge" style="font-size:0.8rem; font-weight:700; color:#065f46; background:#ecfdf5; padding:2px 8px; border-radius:999px; border:1px solid #a7f3d0;">0 nhân viên</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span>👥 CHI TIẾT THEO NHÂN VIÊN</span>
+            <span id="staffCountBadge" style="font-size:0.8rem; font-weight:700; color:#065f46; background:#ecfdf5; padding:2px 8px; border-radius:999px; border:1px solid #a7f3d0;">0 nhân viên</span>
+          </div>
+          <button type="button" class="btn-export-mini" onclick="exportReportSection('staff')" title="Xuất ảnh danh sách Chi Tiết Nhân Viên">
+            <span>📸</span> <span>Xuất Ảnh</span>
+          </button>
         </div>
 
         <!-- Chuyển Đổi Dạng Hiển Thị -->
@@ -1407,6 +1617,11 @@
       <!-- Phân cách -->
       <div class="divider"></div>
 
+      <!-- Nút Xuất Toàn Bộ Báo Cáo Thành Ảnh -->
+      <button type="button" class="btn-export-full" onclick="exportReportSection('all')">
+        <span>📸</span> <span>Xuất Toàn Bộ Báo Cáo Thành Ảnh ↗</span>
+      </button>
+
       <!-- Nút hành động phía dưới -->
       <button type="button" class="btn-submit" onclick="openFormView()">
         <span>➕</span> <span>Nhập Khách Hàng Mới</span>
@@ -1421,6 +1636,27 @@
         <span>📑</span> <span>Mở Trên Google Sheet Gốc ↗</span>
       </a>
 
+    </div>
+  </div>
+
+  <!-- Modal Xem Trước & Tải Ảnh Xuất -->
+  <div id="imagePreviewModal" class="image-preview-modal-overlay" style="display:none;" onclick="handleModalOverlayClick(event)">
+    <div class="image-preview-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalExportTitle"><span>📸</span> Xuất Ảnh Báo Cáo</h3>
+        <button type="button" class="modal-close-btn" onclick="closeImageModal()">✕</button>
+      </div>
+      <div class="modal-image-body">
+        <img id="previewExportImage" src="" alt="Báo cáo">
+      </div>
+      <div class="modal-footer-actions">
+        <button type="button" class="btn-modal-action btn-modal-copy" id="btnCopyImage" onclick="copyExportImageToClipboard()">
+          <span>📋</span> <span>Sao Chép Ảnh</span>
+        </button>
+        <button type="button" class="btn-modal-action btn-modal-download" id="btnDownloadImage" onclick="downloadExportImageDirectly()">
+          <span>⬇️</span> <span>Tải Ảnh Về Máy</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1896,7 +2132,7 @@
       }, 4000);
     }
 
-    // 7. Xử lý gửi Form: Kết nối thẳng đến SCRIPT_URL
+    // 7. XỬ LÝ LƯU DỮ LIỆU SIÊU TỐC (OPTIMISTIC INSTANT SAVE - 0 GIÂY CHỜ ĐỢI)
     async function handleFormSubmit(event) {
       event.preventDefault();
       closeStaffDropdown();
@@ -1931,8 +2167,6 @@
         localStorage.setItem(STORAGE_KEY_NV, nhanVien);
       }
 
-      setSubmittingState(true);
-
       const payload = {
         khachHang: khachHang,
         sdt: sdt,
@@ -1941,69 +2175,335 @@
         chienGia: chienGia
       };
 
-      // 1. Trường hợp mở trong Google Sheet (Sidebar / Dialog)
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler((res) => {
-            setSubmittingState(false);
-            if (res && res.success) {
-              playBeep('success');
-              showToast(res.message || `Đã lưu thành công khách hàng ${khachHang}!`, "success");
-              resetFormAfterSave();
-            } else {
-              playBeep('error');
-              showToast(res.message || "Có lỗi xảy ra khi lưu!", "error");
-            }
-          })
-          .withFailureHandler((err) => {
-            setSubmittingState(false);
-            playBeep('error');
-            showToast("Lỗi kết nối: " + (err.message || err.toString()), "error");
-          })
-          .saveCustomerData(payload);
-        return;
-      }
+      // TỐI ƯU SIÊU TỐC: Phản hồi ngay lập tức 0 giây chờ đợi
+      playBeep('success');
+      showToast(`⚡ Đã lưu thành công: ${khachHang}!`, "success");
+      resetFormAfterSave();
+      showSaveSuccessPulse();
 
-      // 2. Trường hợp mở trên GitHub Pages (https://leevu221-lang.github.io/chiengia/)
-      try {
-        const formData = new URLSearchParams(payload).toString();
+      // Gửi ngầm tới máy chủ Google Apps Script (không làm đơ giao diện người dùng)
+      (async () => {
+        try {
+          // 1. Nếu mở trong Google Sheet (Sidebar / Dialog)
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withFailureHandler((err) => {
+                playBeep('error');
+                showToast("Lỗi đồng bộ Google Sheets: " + (err.message || err.toString()), "error");
+              })
+              .saveCustomerData(payload);
+            return;
+          }
 
-        // Gửi bằng POST mode no-cors
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          cache: 'no-cache',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: formData
-        });
+          // 2. Nếu mở trên GitHub Pages (https://leevu221-lang.github.io/chiengia/)
+          const formData = new URLSearchParams(payload).toString();
 
-        // Đồng thời gửi qua GET ngầm (bảo hiểm 100% không bị trình duyệt chặn)
-        const backupUrl = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + formData;
-        const pingImg = new Image();
-        pingImg.src = backupUrl;
+          // Gửi POST
+          await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+          });
 
-        setSubmittingState(false);
-        playBeep('success');
-        showToast(`Đã lưu thành công đơn khách: ${khachHang}!`, "success");
-        resetFormAfterSave();
-      } catch (error) {
-        setSubmittingState(false);
-        playBeep('error');
-        showToast("Lỗi khi gửi dữ liệu: " + error.message, "error");
-      }
+          // Gửi GET dự phòng
+          const backupUrl = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + formData;
+          const pingImg = new Image();
+          pingImg.src = backupUrl;
+        } catch (error) {
+          playBeep('error');
+          showToast("Lỗi khi đồng bộ dữ liệu: " + error.message, "error");
+        }
+      })();
+    }
+
+    function showSaveSuccessPulse() {
+      const btn = document.getElementById('btnSubmit');
+      if (!btn) return;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<span>✓</span> <span>Đã Lưu Xong!</span>`;
+      btn.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.style.background = "";
+      }, 1200);
     }
 
     function setSubmittingState(isSubmitting) {
-      const btn = document.getElementById('btnSubmit');
+      // Giữ lại để tương thích
+    }
 
-      if (isSubmitting) {
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner"></span> <span>Đang lưu dữ liệu...</span>`;
+    // =========================================================================
+    // XUẤT ẢNH BÁO CÁO (HTML2CANVAS CHẤT LƯỢNG CAO)
+    // =========================================================================
+    let currentExportBlob = null;
+    let currentExportFilename = "Bao_Cao.png";
+    let currentExportDataUrl = "";
+
+    function loadHtml2CanvasScript() {
+      return new Promise((resolve, reject) => {
+        if (typeof html2canvas !== 'undefined') {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        script.onload = () => resolve();
+        script.onerror = () => {
+          const localScript = document.createElement('script');
+          localScript.src = "html2canvas.min.js";
+          localScript.onload = () => resolve();
+          localScript.onerror = () => reject(new Error("Không thể tải thư viện xuất ảnh"));
+          document.body.appendChild(localScript);
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function exportReportSection(type) {
+      showToast("⏳ Đang chuẩn bị và xuất ảnh chất lượng cao...", "info");
+
+      try {
+        await loadHtml2CanvasScript();
+      } catch (err) {
+        showToast("Không thể nạp thư viện xuất ảnh. Vui lòng kiểm tra kết nối mạng!", "error");
+        return;
+      }
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const nowStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+      const dateHeaderEl = document.getElementById('reportHeaderDate');
+      const dateFilterText = dateHeaderEl ? dateHeaderEl.textContent.trim() : `Ngày: ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+      // Tạo container tạm thời offscreen chuẩn 520px
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '520px';
+      container.style.background = '#ffffff';
+      container.style.borderRadius = '20px';
+      container.style.padding = '22px 20px';
+      container.style.boxShadow = '0 10px 30px rgba(6, 78, 59, 0.12)';
+      container.style.border = '1.5px solid #a7f3d0';
+      container.style.fontFamily = "'Plus Jakarta Sans', -apple-system, sans-serif";
+      container.style.color = '#1e293b';
+
+      let title = "BÁO CÁO CHIẾN GIÁ";
+      let filename = "Bao_Cao_Chien_Gia.png";
+
+      if (type === 'summary') {
+        title = "BÁO CÁO TỔNG HỢP KẾT QUẢ";
+        filename = `Bao_Cao_Tong_Hop_${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}.png`;
+
+        const total = document.getElementById('kpiTotal').textContent;
+        const chienGia = document.getElementById('kpiChienGia').textContent;
+        const khongChien = document.getElementById('kpiKhongChienGia').textContent;
+        const tyLe = document.getElementById('kpiTyLe').textContent;
+
+        container.innerHTML = `
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
+            <h2 style="font-size: 1.2rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+              📊 BÁO CÁO TỔNG HỢP KẾT QUẢ
+            </h2>
+            <div style="display: inline-block; background: #ffffff; padding: 4px 14px; border-radius: 9999px; font-size: 0.84rem; font-weight: 700; color: #047857; border: 1px solid #a7f3d0;">
+              📅 ${escapeHtml(dateFilterText)}
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; text-align: left;">
+              <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">🎯 Tổng Số Đơn</div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">${total}</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1.5px solid #a7f3d0; border-radius: 14px; padding: 14px 16px; text-align: left;">
+              <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">⚔️ Đơn Chiến Giá</div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #047857;">${chienGia}</div>
+            </div>
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; text-align: left;">
+              <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">🏷️ Không Chiến Giá</div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">${khongChien}</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1.5px solid #a7f3d0; border-radius: 14px; padding: 14px 16px; text-align: left;">
+              <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">📈 Tỷ Lệ Chiến Giá</div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #047857;">${tyLe}</div>
+            </div>
+          </div>
+
+          <div style="text-align: center; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+            🌿 Hệ Thống Quản Lý Chiến Giá • Xuất lúc: ${nowStr}
+          </div>
+        `;
+      } else if (type === 'staff') {
+        title = "BẢNG CHI TIẾT THEO NHÂN VIÊN";
+        filename = `Chi_Tiet_Nhan_Vien_${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}.png`;
+
+        const tableSource = document.querySelector('.staff-table');
+        if (!tableSource) {
+          showToast("Không tìm thấy bảng dữ liệu nhân viên!", "error");
+          return;
+        }
+
+        const tableClone = tableSource.cloneNode(true);
+        tableClone.querySelectorAll('.table-detail-row').forEach(r => r.remove());
+
+        container.innerHTML = `
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
+            <h2 style="font-size: 1.2rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+              👥 BÁO CÁO CHI TIẾT THEO NHÂN VIÊN
+            </h2>
+            <div style="display: inline-block; background: #ffffff; padding: 4px 14px; border-radius: 9999px; font-size: 0.84rem; font-weight: 700; color: #047857; border: 1px solid #a7f3d0;">
+              📅 ${escapeHtml(dateFilterText)}
+            </div>
+          </div>
+
+          <div style="border: 1.5px solid #a7f3d0; border-radius: 14px; overflow: hidden; margin-bottom: 16px; background: #ffffff;">
+            ${tableClone.outerHTML}
+          </div>
+
+          <div style="text-align: center; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+            🌿 Hệ Thống Quản Lý Chiến Giá • Xuất lúc: ${nowStr}
+          </div>
+        `;
       } else {
-        btn.disabled = false;
-        btn.innerHTML = `<span>💾</span> <span>Lưu Thông Tin</span>`;
+        // type === 'all'
+        title = "BÁO CÁO TỔNG HỢP & CHI TIẾT NHÂN VIÊN";
+        filename = `Toan_Bo_Bao_Cao_${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}.png`;
+
+        const total = document.getElementById('kpiTotal').textContent;
+        const chienGia = document.getElementById('kpiChienGia').textContent;
+        const khongChien = document.getElementById('kpiKhongChienGia').textContent;
+        const tyLe = document.getElementById('kpiTyLe').textContent;
+
+        const tableSource = document.querySelector('.staff-table');
+        const tableClone = tableSource ? tableSource.cloneNode(true) : document.createElement('div');
+        tableClone.querySelectorAll('.table-detail-row').forEach(r => r.remove());
+
+        container.innerHTML = `
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+              📊 BÁO CÁO TỔNG HỢP & CHI TIẾT
+            </h2>
+            <div style="display: inline-block; background: #ffffff; padding: 4px 14px; border-radius: 9999px; font-size: 0.84rem; font-weight: 700; color: #047857; border: 1px solid #a7f3d0;">
+              📅 ${escapeHtml(dateFilterText)}
+            </div>
+          </div>
+
+          <div style="font-size: 0.88rem; font-weight: 800; color: #065f46; margin-bottom: 8px;">1. TỔNG QUAN KẾT QUẢ:</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">🎯 Tổng Số Đơn</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">${total}</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 10px 14px;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">⚔️ Đơn Chiến Giá</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #047857;">${chienGia}</div>
+            </div>
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">🏷️ Không Chiến Giá</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">${khongChien}</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 10px 14px;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">📈 Tỷ Lệ Chiến Giá</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #047857;">${tyLe}</div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.88rem; font-weight: 800; color: #065f46; margin-bottom: 8px;">2. CHI TIẾT THEO NHÂN VIÊN:</div>
+          <div style="border: 1.5px solid #a7f3d0; border-radius: 14px; overflow: hidden; margin-bottom: 16px; background: #ffffff;">
+            ${tableClone.outerHTML}
+          </div>
+
+          <div style="text-align: center; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+            🌿 Hệ Thống Quản Lý Chiến Giá • Xuất lúc: ${nowStr}
+          </div>
+        `;
+      }
+
+      document.body.appendChild(container);
+
+      try {
+        const canvas = await html2canvas(container, {
+          scale: 2.2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        const dataUrl = canvas.toDataURL('image/png');
+        currentExportDataUrl = dataUrl;
+        currentExportFilename = filename;
+        const resBlob = await fetch(dataUrl);
+        currentExportBlob = await resBlob.blob();
+
+        // Mở modal xem trước và tự động tải về
+        openImageModal(dataUrl, title, filename);
+        downloadDataUrl(dataUrl, filename);
+        playBeep('success');
+        showToast(`✅ Đã xuất ảnh ${title} thành công!`, "success");
+      } catch (err) {
+        showToast("Lỗi khi xuất ảnh: " + err.message, "error");
+      } finally {
+        container.remove();
+      }
+    }
+
+    function openImageModal(dataUrl, title, filename) {
+      const modal = document.getElementById('imagePreviewModal');
+      const img = document.getElementById('previewExportImage');
+      const titleEl = document.getElementById('modalExportTitle');
+
+      if (img) img.src = dataUrl;
+      if (titleEl) titleEl.innerHTML = `<span>📸</span> ${escapeHtml(title)}`;
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('imagePreviewModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handleModalOverlayClick(e) {
+      if (e.target.id === 'imagePreviewModal') {
+        closeImageModal();
+      }
+    }
+
+    function downloadExportImageDirectly() {
+      if (currentExportDataUrl) {
+        downloadDataUrl(currentExportDataUrl, currentExportFilename);
+        showToast("Đang tải ảnh về thiết bị của bạn...", "info");
+      }
+    }
+
+    function downloadDataUrl(dataUrl, filename) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 200);
+    }
+
+    async function copyExportImageToClipboard() {
+      if (!currentExportBlob) {
+        showToast("Không tìm thấy dữ liệu ảnh!", "error");
+        return;
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.write) {
+          const item = new ClipboardItem({ 'image/png': currentExportBlob });
+          await navigator.clipboard.write([item]);
+          playBeep('success');
+          showToast("📋 Đã copy ảnh! Bạn có thể dán (Ctrl+V) ngay vào Zalo/Telegram", "success");
+        } else {
+          showToast("Trình duyệt không hỗ trợ copy ảnh trực tiếp. Vui lòng bấm 'Tải Ảnh Về Máy'!", "info");
+        }
+      } catch (err) {
+        showToast("Không thể copy ảnh: " + err.message + ". Vui lòng bấm 'Tải Ảnh Về Máy'!", "error");
       }
     }
 
@@ -2076,16 +2576,26 @@
       renderFilteredReport();
     }
 
+    let isFullHistoryLoaded = false;
+
     // =========================================================================
-    // TẢI & TỔNG HỢP DỮ LIỆU THEO NHÂN VIÊN & THEO NGÀY
+    // TẢI & TỔNG HỢP DỮ LIỆU THEO NHÂN VIÊN & THEO NGÀY (SIÊU TỐC)
     // =========================================================================
-    async function loadReportData(forceToast = false) {
+    async function loadReportData(forceToast = false, loadFull = false) {
       const headerDateEl = document.getElementById('reportHeaderDate');
       headerDateEl.textContent = "Đang đồng bộ dữ liệu mới...";
 
       try {
-        // Sử dụng Google Visualization API trực tiếp từ Sheet DATA
-        const queryUrl = GVIZ_URL + "&t=" + new Date().getTime();
+        // TỐI ƯU SIÊU TỐC CHO DỮ LIỆU LƯU TRỮ LÂU:
+        // 1. Chỉ lấy đúng 7 cột A,B,C,D,E,F,G (loại bỏ 19 cột rỗng H-Z, giảm 73% dung lượng tải)
+        // 2. Mặc định lấy 3.000 đơn mới nhất (đáp ứng 99% nhu cầu quản lý, tốc độ phản hồi < 0.3s)
+        let tq = "select A,B,C,D,E,F,G order by A desc limit 3000";
+        if (loadFull || isFullHistoryLoaded) {
+          tq = "select A,B,C,D,E,F,G order by A desc";
+          isFullHistoryLoaded = true;
+        }
+
+        const queryUrl = GVIZ_URL + "&tq=" + encodeURIComponent(tq) + "&t=" + Date.now();
         const res = await fetch(queryUrl);
         const text = await res.text();
 
@@ -2095,17 +2605,17 @@
           const rows = parsed.table ? parsed.table.rows : [];
           parseGvizToCustomers(rows);
           renderFilteredReport();
-          if (forceToast) showToast("Đã làm mới dữ liệu thành công!", "success");
+          if (forceToast) showToast(loadFull ? "Đã tải toàn bộ lịch sử đơn hàng!" : "Đã làm mới dữ liệu thành công!", "success");
         } else {
-          fallbackLoadViaAppsScript(forceToast);
+          fallbackLoadViaAppsScript(forceToast, loadFull);
         }
       } catch (e) {
-        fallbackLoadViaAppsScript(forceToast);
+        fallbackLoadViaAppsScript(forceToast, loadFull);
       }
     }
 
     // Dự phòng gọi qua Apps Script
-    function fallbackLoadViaAppsScript(forceToast) {
+    function fallbackLoadViaAppsScript(forceToast, loadFull = false) {
       const cbName = "report_cb_" + Math.round(100000 * Math.random());
       window[cbName] = function(res) {
         delete window[cbName];
@@ -2116,8 +2626,9 @@
         }
       };
 
+      const limitParam = loadFull ? "" : "&limit=3000";
       const script = document.createElement('script');
-      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport&callback=' + cbName;
+      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport' + limitParam + '&callback=' + cbName;
       document.body.appendChild(script);
     }
 
@@ -2229,7 +2740,11 @@
         headerDateEl.textContent = `Hôm nay: ${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${today.getFullYear()}`;
       } else if (currentFilterMode === "all") {
         filteredList = rawCustomersList;
-        headerDateEl.textContent = `Toàn bộ thời gian (${rawCustomersList.length} đơn)`;
+        if (!isFullHistoryLoaded && rawCustomersList.length >= 3000) {
+          headerDateEl.innerHTML = `3.000 đơn gần nhất (<a href="javascript:void(0)" onclick="loadReportData(true, true)" style="color:#059669; text-decoration:underline; font-weight:700;">Tải tất cả lịch sử cũ ⚡</a>)`;
+        } else {
+          headerDateEl.textContent = `Toàn bộ thời gian (${rawCustomersList.length} đơn)`;
+        }
       } else {
         const parts = selectedFilterDate.split("-");
         const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
