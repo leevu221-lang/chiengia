@@ -1397,6 +1397,25 @@
         </div>
       </div>
 
+      <!-- Giá Sản Phẩm -->
+      <div class="form-group">
+        <label class="form-label" for="giaSanPham">
+          Giá Sản Phẩm
+        </label>
+        <div class="input-wrapper">
+          <span class="input-icon">💰</span>
+          <input
+            type="text"
+            id="giaSanPham"
+            name="giaSanPham"
+            class="form-input"
+            placeholder="VD: 15.000.000 hoặc 500.000..."
+            inputmode="numeric"
+            oninput="formatPriceInput(this)"
+          >
+        </div>
+      </div>
+
       <!-- Nhân Viên Phụ Trách (Hỗ trợ gợi ý tự động từ sheet "nhân viên") -->
       <div class="form-group">
         <label class="form-label" for="nhanVien">
@@ -1764,6 +1783,16 @@
       }
     }
 
+    // Tự động định dạng giá tiền (VD: 15000000 -> 15.000.000)
+    function formatPriceInput(el) {
+      if (!el) return;
+      let val = el.value;
+      let digitsOnly = val.replace(/[\s.,đĐ]/g, '');
+      if (/^\d+$/.test(digitsOnly)) {
+        el.value = Number(digitsOnly).toLocaleString('vi-VN');
+      }
+    }
+
     // 4. Thiết lập phím tắt bàn phím
     function setupKeyboardShortcuts() {
       document.addEventListener('keydown', (e) => {
@@ -1778,6 +1807,7 @@
         document.getElementById('khachHang'),
         document.getElementById('sdt'),
         document.getElementById('sanPham'),
+        document.getElementById('giaSanPham'),
         document.getElementById('nhanVien')
       ];
 
@@ -2151,12 +2181,14 @@
       const khachHangEl = document.getElementById('khachHang');
       const sdtEl = document.getElementById('sdt');
       const sanPhamEl = document.getElementById('sanPham');
+      const giaSanPhamEl = document.getElementById('giaSanPham');
       const nhanVienEl = document.getElementById('nhanVien');
       const chienGiaEl = document.getElementById('chienGiaCheckbox');
 
       const khachHang = khachHangEl.value.trim();
       const sdt = sdtEl.value.trim();
       const sanPham = sanPhamEl.value.trim();
+      const giaSanPham = giaSanPhamEl ? giaSanPhamEl.value.trim() : '';
       const nhanVien = nhanVienEl.value.trim();
       const chienGia = Boolean(chienGiaEl.checked);
 
@@ -2190,6 +2222,7 @@
         khachHang: khachHang,
         sdt: sdt,
         sanPham: sanPham,
+        giaSanPham: giaSanPham,
         nhanVien: nhanVien,
         chienGia: chienGia
       };
@@ -2638,6 +2671,8 @@
       document.getElementById('khachHang').value = "";
       document.getElementById('sdt').value = "";
       document.getElementById('sanPham').value = "";
+      const giaSpEl = document.getElementById('giaSanPham');
+      if (giaSpEl) giaSpEl.value = "";
       
       const cb = document.getElementById('chienGiaCheckbox');
       cb.checked = false;
@@ -2714,11 +2749,11 @@
 
       try {
         // TỐI ƯU SIÊU TỐC CHO DỮ LIỆU LƯU TRỮ LÂU:
-        // 1. Chỉ lấy đúng 7 cột A,B,C,D,E,F,G (loại bỏ 19 cột rỗng H-Z, giảm 73% dung lượng tải)
+        // 1. Chỉ lấy đúng 8 cột A,B,C,D,E,F,G,H (loại bỏ 18 cột rỗng I-Z, giảm 70% dung lượng tải)
         // 2. Mặc định lấy 3.000 đơn mới nhất (đáp ứng 99% nhu cầu quản lý, tốc độ phản hồi < 0.3s)
-        let tq = "select A,B,C,D,E,F,G order by A desc limit 3000";
+        let tq = "select A,B,C,D,E,F,G,H order by A desc limit 3000";
         if (loadFull || isFullHistoryLoaded) {
-          tq = "select A,B,C,D,E,F,G order by A desc";
+          tq = "select A,B,C,D,E,F,G,H order by A desc";
           isFullHistoryLoaded = true;
         }
 
@@ -2803,6 +2838,7 @@
         }
 
         const sanPham = c[6] ? String(c[6].v || "") : "";
+        const giaSanPham = c[7] ? String(c[7].v || "") : "";
 
         if (khachHang || sdt) {
           list.push({
@@ -2814,7 +2850,8 @@
             time: fullTimeStr,
             dateKey: dateKey,
             dateDisplay: dateDisplay,
-            sanPham: sanPham
+            sanPham: sanPham,
+            giaSanPham: giaSanPham
           });
         }
       });
@@ -2987,7 +3024,7 @@
                     <div>
                       <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
                       <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
-                      ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
+                      ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}${o.giaSanPham ? ` &bull; <strong style="color:#b45309;">💰 ${escapeHtml(o.giaSanPham)}</strong>` : ''}</div>` : (o.giaSanPham ? `<div style="color:#b45309; font-size:0.75rem;">💰 ${escapeHtml(o.giaSanPham)}</div>` : '')}
                     </div>
                     <div style="text-align:right;">
                       <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>
@@ -3051,7 +3088,7 @@
                   <div>
                     <strong>👤 ${escapeHtml(o.khachHang)}</strong> 
                     <span style="color:#64748b; font-size:0.75rem;">(${escapeHtml(o.sdt)})</span>
-                    ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}</div>` : ''}
+                    ${o.sanPham ? `<div style="color:#047857; font-size:0.75rem;">🏷️ ${escapeHtml(o.sanPham)}${o.giaSanPham ? ` &bull; <strong style="color:#b45309;">💰 ${escapeHtml(o.giaSanPham)}</strong>` : ''}</div>` : (o.giaSanPham ? `<div style="color:#b45309; font-size:0.75rem;">💰 ${escapeHtml(o.giaSanPham)}</div>` : '')}
                   </div>
                   <div style="text-align:right;">
                     <span class="badge-stat ${o.chienGia ? 'chien-gia' : 'thuong'}">${o.chienGia ? 'Chiến Giá' : 'Thường'}</span>

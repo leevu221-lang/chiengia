@@ -208,11 +208,11 @@ function getOrCreateSheet(ss, sheetName) {
  */
 function ensureDataSheetHeader(sheet) {
   const lastRow = sheet.getLastRow();
-  const lastCol = Math.max(sheet.getLastColumn(), 6);
+  const lastCol = Math.max(sheet.getLastColumn(), 8);
 
   if (lastRow === 0) {
-    // Nếu sheet hoàn toàn trống, tạo hàng tiêu đề chuẩn
-    const headers = ["STT", "KHÁCH HÀNG", "SĐT", "NHÂN VIÊN", "Chiến Giá", "Time", "Sản Phẩm Chính"];
+    // Nếu sheet hoàn toàn trống, tạo hàng tiêu đề chuẩn 8 cột
+    const headers = ["STT", "KHÁCH HÀNG", "SĐT", "NHÂN VIÊN", "Chiến Giá", "Time", "Sản Phẩm Chính", "GIÁ SẢN PHẨM"];
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setValues([headers]);
     headerRange
@@ -225,8 +225,10 @@ function ensureDataSheetHeader(sheet) {
       .setVerticalAlignment("middle");
     sheet.setRowHeight(1, 38);
     sheet.setFrozenRows(1);
+    sheet.setColumnWidth(7, 200);
+    sheet.setColumnWidth(8, 160);
   } else {
-    // Nếu đã có hàng tiêu đề (như trong ảnh của bạn), kiểm tra xem cột G đã có "Sản Phẩm Chính" chưa
+    // Kiểm tra xem cột G đã có "Sản Phẩm Chính" chưa
     const headerG = sheet.getRange(1, 7).getValue().toString().trim();
     if (!headerG || headerG.includes("Sản Phẩm & Lý Do Ra Về")) {
       sheet.getRange(1, 7).setValue("Sản Phẩm Chính");
@@ -239,6 +241,20 @@ function ensureDataSheetHeader(sheet) {
         .setHorizontalAlignment("center")
         .setVerticalAlignment("middle");
       sheet.setColumnWidth(7, 200);
+    }
+    // Kiểm tra xem cột H đã có "GIÁ SẢN PHẨM" chưa
+    const headerH = sheet.getRange(1, 8).getValue().toString().trim();
+    if (!headerH) {
+      sheet.getRange(1, 8).setValue("GIÁ SẢN PHẨM");
+      sheet.getRange(1, 8)
+        .setBackground(sheet.getRange(1, 7).getBackground() || "#f59e0b")
+        .setFontColor(sheet.getRange(1, 7).getFontColor() || "#000000")
+        .setFontWeight("bold")
+        .setFontFamily("Arial")
+        .setFontSize(10)
+        .setHorizontalAlignment("center")
+        .setVerticalAlignment("middle");
+      sheet.setColumnWidth(8, 160);
     }
   }
 }
@@ -317,6 +333,7 @@ function saveCustomerData(formData) {
 
     const nhanVien = (formData.nhanVien || "").trim() || "Chưa phân công";
     const sanPham = (formData.sanPham || "").trim();
+    const giaSanPham = (formData.giaSanPham || "").trim();
     const isChienGia = Boolean(formData.chienGia);
     const chienGiaText = isChienGia ? "Có" : "Không";
 
@@ -352,7 +369,7 @@ function saveCustomerData(formData) {
     const targetRow = lastRow + 1;
 
     // MẢNG DỮ LIỆU GHI VÀO DÒNG MỚI:
-    // [STT, KHÁCH HÀNG, SĐT, NHÂN VIÊN, Chiến Giá, Time, Sản Phẩm]
+    // [STT, KHÁCH HÀNG, SĐT, NHÂN VIÊN, Chiến Giá, Time, Sản Phẩm, Giá Sản Phẩm]
     const rowValues = [
       stt,
       khachHang,
@@ -360,18 +377,19 @@ function saveCustomerData(formData) {
       nhanVien,
       chienGiaText,
       thoiGianStr,
-      sanPham
+      sanPham,
+      giaSanPham
     ];
 
     sheetData.appendRow(rowValues);
 
-    // TỐI ƯU SIÊU TỐC: Định dạng toàn bộ dòng trong 1 lệnh duy nhất (giảm từ 10 lệnh xuống 1)
-    const rowRange = sheetData.getRange(targetRow, 1, 1, 7);
+    // TỐI ƯU SIÊU TỐC: Định dạng toàn bộ dòng trong 1 lệnh duy nhất (8 cột)
+    const rowRange = sheetData.getRange(targetRow, 1, 1, 8);
     rowRange
       .setFontFamily("Arial")
       .setFontSize(10)
       .setVerticalAlignment("middle")
-      .setHorizontalAlignments([["center", "left", "center", "center", "center", "center", "left"]])
+      .setHorizontalAlignments([["center", "left", "center", "center", "center", "center", "left", "center"]])
       .setBorder(true, true, true, true, true, true, THEME.BORDER_COLOR, SpreadsheetApp.BorderStyle.SOLID);
 
     // Tô màu ô Chiến Giá nếu có (1 lệnh)
@@ -395,7 +413,8 @@ function saveCustomerData(formData) {
         nhanVien: nhanVien,
         chienGia: isChienGia,
         thoiGian: thoiGianStr,
-        sanPham: sanPham
+        sanPham: sanPham,
+        giaSanPham: giaSanPham
       }
     };
 
@@ -730,7 +749,7 @@ function getReportData(dateFilter, limit) {
     const startRow = Math.max(2, lastRow - maxLimit + 1);
     const numRows = lastRow - startRow + 1;
 
-    const dataValues = sheetData.getRange(startRow, 1, numRows, 7).getValues();
+    const dataValues = sheetData.getRange(startRow, 1, numRows, 8).getValues();
     const list = [];
     const dateSet = {};
 
@@ -764,6 +783,7 @@ function getReportData(dateFilter, limit) {
       }
 
       const sanPham = (row[6] || "").toString().trim();
+      const giaSanPham = (row[7] || "").toString().trim();
       if (dateOnly) dateSet[dateOnly] = true;
 
       // Lọc theo ngày nếu có yêu cầu
@@ -778,7 +798,8 @@ function getReportData(dateFilter, limit) {
         chienGiaText: isChienGia ? "Có" : "Không",
         time: fullTimeStr,
         date: dateOnly,
-        sanPham: sanPham
+        sanPham: sanPham,
+        giaSanPham: giaSanPham
       });
     }
 
@@ -815,13 +836,13 @@ function formatSheetsManual() {
 
 /**
  * TỐI ƯU TOÀN DIỆN BẢNG TÍNH GOOGLE SHEETS
- * Dọn sạch hàng rác, cột rác (H -> Z), giải phóng bộ nhớ để sheet chạy siêu tốc dù lưu hàng chục nghìn đơn
+ * Dọn sạch hàng rác, cột rác (I -> Z), giải phóng bộ nhớ để sheet chạy siêu tốc dù lưu hàng chục nghìn đơn
  */
 function optimizeSpreadsheet() {
   try {
     const ss = getSpreadsheet();
     const sheets = [
-      { name: SHEET_DATA_NAME, maxCols: 7 },
+      { name: SHEET_DATA_NAME, maxCols: 8 },
       { name: SHEET_TONG_HOP_NAME, maxCols: 7 },
       { name: "nhân viên", maxCols: 3 }
     ];
@@ -833,7 +854,7 @@ function optimizeSpreadsheet() {
       const sheet = ss.getSheetByName(info.name);
       if (!sheet) return;
 
-      // 1. Xóa các cột thừa vượt quá maxCols (Ví dụ từ H đến Z)
+      // 1. Xóa các cột thừa vượt quá maxCols (Ví dụ từ I đến Z)
       const curCols = sheet.getMaxColumns();
       if (curCols > info.maxCols) {
         const deleteCount = curCols - info.maxCols;
@@ -897,7 +918,7 @@ function archiveOldData() {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const values = sheetData.getRange(2, 1, lastRow - 1, 7).getValues();
+    const values = sheetData.getRange(2, 1, lastRow - 1, 8).getValues();
     const keepRows = [];
     const archiveRows = [];
 
@@ -925,15 +946,15 @@ function archiveOldData() {
       return;
     }
 
-    // Ghi vào sheet Archive
+    // Ghi vào sheet Archive (8 cột)
     const archiveLastRow = sheetArchive.getLastRow();
-    sheetArchive.getRange(archiveLastRow + 1, 1, archiveRows.length, 7).setValues(archiveRows);
+    sheetArchive.getRange(archiveLastRow + 1, 1, archiveRows.length, 8).setValues(archiveRows);
 
-    // Xóa và cập nhật lại sheet DATA
-    sheetData.getRange(2, 1, lastRow - 1, 7).clear();
+    // Xóa và cập nhật lại sheet DATA (8 cột)
+    sheetData.getRange(2, 1, lastRow - 1, 8).clear();
     if (keepRows.length > 0) {
       keepRows.forEach((r, i) => r[0] = i + 1);
-      sheetData.getRange(2, 1, keepRows.length, 7).setValues(keepRows);
+      sheetData.getRange(2, 1, keepRows.length, 8).setValues(keepRows);
     }
 
     ui.alert("Thành Công", `✅ Đã chuyển thành công ${archiveRows.length} đơn cũ sang sheet 'DATA_ARCHIVE'.\nSheet 'DATA' hiện còn ${keepRows.length} đơn gần nhất!`, ui.ButtonSet.OK);
