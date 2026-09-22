@@ -13,6 +13,7 @@ const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_
 // Tên trang tính mặc định (tự động tìm không phân biệt chữ hoa/thường)
 const SHEET_DATA_NAME = "DATA";
 const SHEET_TONG_HOP_NAME = "TỔNG HỢP";
+const SHEET_SHOPS_NAME = "SHOPS";
 
 // Bảng mã màu Tone Pastel
 const THEME = {
@@ -97,9 +98,37 @@ function doGet(e) {
     return createJsonResponse(result, e.parameter.callback);
   }
 
-  const customSheetId = e && e.parameter ? (e.parameter.spreadsheetId || e.parameter.sheet || "").trim() : "";
+  let customSheetId = e && e.parameter ? (e.parameter.spreadsheetId || e.parameter.sheet || "").trim() : "";
+  const shopParam = e && e.parameter ? (e.parameter.s || e.parameter.shop || "").trim() : "";
+  if (!customSheetId && shopParam) {
+    const res = resolveShop(shopParam);
+    if (res && res.found && res.sheetId) {
+      customSheetId = res.sheetId;
+    }
+  }
 
-  // 3. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web (hỗ trợ phân trang / giới hạn để siêu tốc)
+  // 3. API Đăng ký mã Shop tự động (hoặc chỉ định)
+  if (e && e.parameter && e.parameter.action === "registerShop") {
+    const rawSheet = e.parameter.sheetId || e.parameter.sheet || e.parameter.url || "";
+    const rawCode = e.parameter.shopCode || e.parameter.s || e.parameter.shop || "";
+    const result = registerShop(rawSheet, rawCode);
+    return createJsonResponse(result, e.parameter.callback);
+  }
+
+  // 4. API Tra cứu mã Shop ra Sheet ID
+  if (e && e.parameter && e.parameter.action === "resolveShop") {
+    const rawCode = e.parameter.shopCode || e.parameter.s || e.parameter.shop || "";
+    const result = resolveShop(rawCode);
+    return createJsonResponse(result, e.parameter.callback);
+  }
+
+  // 5. API Lấy danh sách toàn bộ Shop đã đăng ký
+  if (e && e.parameter && e.parameter.action === "getShops") {
+    const result = getAllShops();
+    return createJsonResponse(result, e.parameter.callback);
+  }
+
+  // 6. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web (hỗ trợ phân trang / giới hạn để siêu tốc)
   if (e && e.parameter && (e.parameter.action === "getReport" || e.parameter.action === "getData")) {
     const limit = e.parameter.limit ? parseInt(e.parameter.limit) : 3000;
     const date = e.parameter.date || null;
@@ -107,7 +136,7 @@ function doGet(e) {
     return createJsonResponse(report, e.parameter.callback);
   }
 
-  // 4. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động
+  // 7. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động
   if (e && e.parameter && (e.parameter.action === "getStaffList" || e.parameter.action === "getStaff")) {
     const staffData = getStaffList(customSheetId);
     return createJsonResponse(staffData, e.parameter.callback);
@@ -169,8 +198,20 @@ function createJsonResponse(data, callback) {
  * Kết nối Spreadsheet an toàn (hỗ trợ Sheet ID tùy chỉnh đa trang tính)
  */
 function getSpreadsheet(customSheetId) {
-  const targetId = (customSheetId || "").toString().trim();
+  let targetId = (customSheetId || "").toString().trim();
   if (targetId) {
+    // Nếu là mã shop ngắn (dưới 20 ký tự), tra cứu mã trong bảng SHOPS
+    if (targetId.length < 20) {
+      try {
+        const resolved = resolveShop(targetId);
+        if (resolved && resolved.found && resolved.sheetId) {
+          targetId = resolved.sheetId;
+        }
+      } catch (resErr) {
+        Logger.log("Lỗi resolveShop trong getSpreadsheet: " + resErr.toString());
+      }
+    }
+
     try {
       return SpreadsheetApp.openById(targetId);
     } catch (err) {
@@ -333,7 +374,7 @@ function saveCustomerData(formData) {
   }
 
   try {
-    const targetSheetId = (formData.spreadsheetId || formData.sheetId || "").toString().trim();
+    const targetSheetId = (formData.spreadsheetId || formData.sheetId || formData.s || formData.shop || "").toString().trim();
     const ss = getSpreadsheet(targetSheetId);
     const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
     
@@ -1030,5 +1071,210 @@ function getStaffList(customSheetId) {
       error: err.toString(),
       list: []
     };
+  }
+}
+
+/**
+ * 8. HỆ THỐNG QUẢN LÝ MÃ SHOP RÚT GỌN (MULTI-SHOP MAPPING)
+ * Quản lý danh sách shop & sheet ID tại tab "SHOPS" trên Master Sheet
+ */
+
+function getOrCreateShopsSheet(masterSS) {
+  let sheet = masterSS.getSheetByName(SHEET_SHOPS_NAME);
+  if (!sheet) {
+    sheet = masterSS.insertSheet(SHEET_SHOPS_NAME);
+    const headers = ["MÃ SHOP", "TÊN GOOGLE SHEET", "SHEET ID", "LINK TRANG TÍNH", "NGÀY ĐĂNG KÝ"];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground(THEME.SUMMARY_HEADER_BG || "#d1fae5")
+      .setFontColor(THEME.SUMMARY_HEADER_TEXT || "#065f46")
+      .setFontWeight("bold")
+      .setFontFamily("Roboto")
+      .setHorizontalAlignment("center")
+      .setVerticalAlignment("middle");
+
+    sheet.setRowHeight(1, 35);
+    sheet.setColumnWidth(1, 130); // Mã Shop
+    sheet.setColumnWidth(2, 230); // Tên Google Sheet
+    sheet.setColumnWidth(3, 260); // Sheet ID
+    sheet.setColumnWidth(4, 340); // Link Sheet
+    sheet.setColumnWidth(5, 160); // Ngày đăng ký
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/**
+ * Trích xuất mã shop ngắn gọn từ tên Google Sheet (VD: "1841 - chiengia" -> "1841")
+ */
+function extractShopCodeFromName(title) {
+  if (!title) return "shop";
+  title = title.toString().trim();
+
+  // 1. Kiểm tra nếu có tiền tố số hoặc ký tự phân cách ở đầu (VD: "1841 - chiengia", "1841_chiengia", "1841 ")
+  const leadingMatch = title.match(/^([a-zA-Z0-9]+)\s*[-_ ]/);
+  if (leadingMatch && leadingMatch[1]) {
+    return leadingMatch[1].toLowerCase();
+  }
+
+  // 2. Kiểm tra nếu toàn bộ tên là số hoặc chuỗi ngắn gọn
+  if (/^[a-zA-Z0-9_-]{1,15}$/.test(title)) {
+    return title.toLowerCase();
+  }
+
+  // 3. Chuẩn hóa tiếng Việt bỏ dấu: "Cửa hàng Nam" -> "cuahangnam"
+  let clean = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+  clean = clean.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+  clean = clean.replace(/-+/g, "-").replace(/^-|-$/g, "");
+
+  return clean.substring(0, 20) || "shop";
+}
+
+/**
+ * Đăng ký hoặc cập nhật mã Shop vào tab SHOPS trên Master Spreadsheet
+ */
+function registerShop(sheetIdOrUrl, customShopCode) {
+  try {
+    if (!sheetIdOrUrl) {
+      return { success: false, message: "Vui lòng cung cấp link hoặc ID Google Sheet!" };
+    }
+
+    let sheetId = sheetIdOrUrl.toString().trim();
+    const match = sheetId.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      sheetId = match[1];
+    }
+
+    // Mở trang tính đích để đọc tên và kiểm tra quyền truy cập
+    let targetSS;
+    try {
+      targetSS = SpreadsheetApp.openById(sheetId);
+    } catch (e) {
+      return {
+        success: false,
+        message: "Không thể mở Google Sheet này! Vui lòng đảm bảo trang tính đã bật quyền 'Bất kỳ ai có đường liên kết đều có thể chỉnh sửa'."
+      };
+    }
+
+    const sheetTitle = targetSS.getName();
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/" + sheetId + "/edit?usp=sharing";
+
+    // Tự động xác định mã shop
+    let shopCode = (customShopCode || "").toString().trim().toLowerCase();
+    if (!shopCode) {
+      shopCode = extractShopCodeFromName(sheetTitle);
+    }
+    // Chuẩn hóa shopCode: chỉ giữ chữ cái, số, dấu gạch ngang/dưới
+    shopCode = shopCode.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+    shopCode = shopCode.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
+    if (!shopCode) shopCode = "shop" + Math.floor(1000 + Math.random() * 9000);
+
+    // Mở Master Spreadsheet
+    const masterSS = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const shopsSheet = getOrCreateShopsSheet(masterSS);
+
+    const lastRow = shopsSheet.getLastRow();
+    let updated = false;
+    const nowStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+
+    if (lastRow >= 2) {
+      const data = shopsSheet.getRange(2, 1, lastRow - 1, 5).getValues();
+      for (let i = 0; i < data.length; i++) {
+        const existingCode = (data[i][0] || "").toString().trim().toLowerCase();
+        if (existingCode === shopCode) {
+          const rowIdx = i + 2;
+          shopsSheet.getRange(rowIdx, 2).setValue(sheetTitle);
+          shopsSheet.getRange(rowIdx, 3).setValue(sheetId);
+          shopsSheet.getRange(rowIdx, 4).setValue(sheetUrl);
+          shopsSheet.getRange(rowIdx, 5).setValue(nowStr);
+          updated = true;
+          break;
+        }
+      }
+    }
+
+    if (!updated) {
+      shopsSheet.appendRow([shopCode, sheetTitle, sheetId, sheetUrl, nowStr]);
+    }
+
+    return {
+      success: true,
+      shopCode: shopCode,
+      sheetTitle: sheetTitle,
+      sheetId: sheetId,
+      sheetUrl: sheetUrl,
+      updated: updated
+    };
+  } catch (err) {
+    Logger.log("Lỗi registerShop: " + err.toString());
+    return {
+      success: false,
+      message: err.toString()
+    };
+  }
+}
+
+/**
+ * Tra cứu mã Shop ra Sheet ID từ tab SHOPS trên Master Spreadsheet
+ */
+function resolveShop(shopCode) {
+  try {
+    if (!shopCode) {
+      return { success: false, found: false, message: "Thiếu mã shop." };
+    }
+    const targetCode = shopCode.toString().trim().toLowerCase();
+    const masterSS = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const shopsSheet = getOrCreateShopsSheet(masterSS);
+    const lastRow = shopsSheet.getLastRow();
+    if (lastRow < 2) {
+      return { success: false, found: false, message: "Chưa có cửa hàng nào được đăng ký." };
+    }
+
+    const data = shopsSheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const code = (data[i][0] || "").toString().trim().toLowerCase();
+      if (code === targetCode) {
+        return {
+          success: true,
+          found: true,
+          shopCode: code,
+          sheetTitle: data[i][1],
+          sheetId: data[i][2],
+          sheetUrl: data[i][3]
+        };
+      }
+    }
+
+    return {
+      success: false,
+      found: false,
+      message: "Không tìm thấy cửa hàng với mã: " + targetCode
+    };
+  } catch (err) {
+    Logger.log("Lỗi resolveShop: " + err.toString());
+    return { success: false, found: false, message: err.toString() };
+  }
+}
+
+/**
+ * Lấy toàn bộ danh sách cửa hàng đã đăng ký
+ */
+function getAllShops() {
+  try {
+    const masterSS = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = getOrCreateShopsSheet(masterSS);
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, shops: [] };
+    const data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const list = data.map(r => ({
+      shopCode: (r[0] || "").toString().trim().toLowerCase(),
+      sheetTitle: (r[1] || "").toString().trim(),
+      sheetId: (r[2] || "").toString().trim(),
+      sheetUrl: (r[3] || "").toString().trim()
+    })).filter(s => s.shopCode && s.sheetId);
+    return { success: true, shops: list };
+  } catch (e) {
+    return { success: false, error: e.toString(), shops: [] };
   }
 }

@@ -1907,17 +1907,38 @@
               id="inputCustomSheetUrl"
               class="form-input"
               placeholder="VD: https://docs.google.com/spreadsheets/d/1ABC.../edit"
+              oninput="handleSheetUrlInput(this.value)"
             >
           </div>
           <div class="settings-hint">
-            💡 <strong>Lưu ý quan trọng:</strong> Trang tính cần được bật quyền chia sẻ: <em>"Bất kỳ ai có đường liên kết đều có thể chỉnh sửa"</em> để ứng dụng có thể lưu đơn hàng.
+            💡 <strong>Lưu ý:</strong> Trang tính cần được bật quyền chia sẻ: <em>"Bất kỳ ai có đường liên kết đều có thể chỉnh sửa"</em>.
+          </div>
+        </div>
+
+        <!-- Ô nhập Mã Shop rút gọn -->
+        <div class="form-group" style="margin-top: 6px;">
+          <label class="form-label" for="inputCustomShopCode" style="font-size:0.85rem;">
+            🏷️ Mã Shop rút gọn (VD: 1841):
+          </label>
+          <div class="input-wrapper">
+            <span class="input-icon">🏪</span>
+            <input
+              type="text"
+              id="inputCustomShopCode"
+              class="form-input"
+              placeholder="VD: 1841 (tự động gợi ý từ tên Sheet)"
+              style="font-weight:600; color:#065f46;"
+            >
+          </div>
+          <div class="settings-hint">
+            ⚡ Hệ thống tự động nhận diện mã từ tên Google Sheet (VD: <em>"1841 - chiengia"</em> ➔ mã <strong>1841</strong>) để tạo link ngắn <strong>?s=1841</strong>.
           </div>
         </div>
 
         <!-- Nút áp dụng & khôi phục -->
         <div class="settings-btn-row">
-          <button type="button" class="btn-submit" style="margin-top:0; height:42px; font-size:0.88rem; flex:1;" onclick="saveCustomSheetSetting()">
-            <span>💾 Lưu & Áp Dụng</span>
+          <button type="button" class="btn-submit" id="btnSaveSheetSetting" style="margin-top:0; height:42px; font-size:0.88rem; flex:1;" onclick="saveCustomShopSetting()">
+            <span>💾 Lưu & Tạo Link Rút Gọn</span>
           </button>
           <button type="button" class="btn-sheet" style="height:42px; font-size:0.82rem; flex:1;" onclick="resetDefaultSheetSetting()">
             <span>🔄 Khôi Phục Mặc Định</span>
@@ -1927,13 +1948,13 @@
         <!-- Khu vực link chia sẻ cho nhân viên -->
         <div class="settings-share-box">
           <div class="settings-share-title">
-            <span>👥</span> <strong>Link chia sẻ cho toàn bộ nhân viên:</strong>
+            <span>👥</span> <strong>Link rút gọn gửi cho toàn bộ nhân viên:</strong>
           </div>
           <div class="settings-share-desc">
             Nhân viên chỉ cần mở link này là vào thẳng Form nhập liệu của bạn, không bao giờ bị hỏi lại link Sheet.
           </div>
           <div class="settings-share-input-group">
-            <input type="text" id="shareableEmployeeLink" class="form-input settings-share-input" readonly>
+            <input type="text" id="shareableEmployeeLink" class="form-input settings-share-input" readonly placeholder="https://leevu221-lang.github.io/chiengia/?s=1841">
             <button type="button" class="btn-copy-share" id="btnCopyShareLink" onclick="copyShareableEmployeeLink()">
               <span>📋</span> <span>Sao chép link</span>
             </button>
@@ -1947,11 +1968,17 @@
 
   <script>
     // =========================================================================
-    // HỆ THỐNG ĐA TRANG TÍNH (MULTI-SHEET) - TỰ ĐỘNG NHẬN DIỆN SHEET ID
+    // HỆ THỐNG ĐA TRANG TÍNH (MULTI-SHEET) & MÃ SHOP RÚT GỌN (?s=1841)
     // =========================================================================
     const DEFAULT_SPREADSHEET_ID = "1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxE2Rm3_eyImKCAX5FSJ0BajF7AlaFaxqhlVj4nsgwkXnjtvlMgDiQDCYZ-gt9IJlLB/exec";
     const STORAGE_KEY_CUSTOM_SHEET = "appscript_custom_sheet_id";
+    const STORAGE_KEY_SHOP_CODE = "appscript_current_shop_code";
+    const STORAGE_KEY_SHOP_TITLE = "appscript_current_shop_title";
+
+    let currentSheetId = DEFAULT_SPREADSHEET_ID;
+    let currentShopCode = "";
+    let currentShopTitle = "";
 
     // Trích xuất ID Google Sheet từ URL đầy đủ hoặc chuỗi ID
     function extractSpreadsheetId(input) {
@@ -1967,24 +1994,75 @@
       return null;
     }
 
-    // Khởi tạo Sheet ID hiện tại (Ưu tiên URL param ?sheet=... -> LocalStorage -> Mặc định)
-    let currentSheetId = (function() {
+    // Trích xuất mã ngắn gọn từ tên Google Sheet (VD: "1841 - chiengia" -> "1841")
+    function extractShopCodeFromName(title) {
+      if (!title) return "";
+      title = title.toString().trim();
+      const leadingMatch = title.match(/^([a-zA-Z0-9]+)\s*[-_ ]/);
+      if (leadingMatch && leadingMatch[1]) {
+        return leadingMatch[1].toLowerCase();
+      }
+      if (/^[a-zA-Z0-9_-]{1,15}$/.test(title)) {
+        return title.toLowerCase();
+      }
+      let clean = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+      clean = clean.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+      clean = clean.replace(/-+/g, "-").replace(/^-|-$/g, "");
+      return clean.substring(0, 20);
+    }
+
+    // Khởi tạo Sheet ID & Mã Shop khi nạp trang
+    (function initShopContext() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const paramSheet = urlParams.get('sheet');
-        if (paramSheet) {
+        const paramS = (urlParams.get('s') || urlParams.get('shop') || '').trim().toLowerCase();
+        const paramSheet = (urlParams.get('sheet') || '').trim();
+
+        if (paramS) {
+          currentShopCode = paramS;
+          try {
+            localStorage.setItem(STORAGE_KEY_SHOP_CODE, paramS);
+          } catch (e) {}
+
+          // 1. Kiểm tra cache localStorage để nạp tức thì trong 0 giây
+          const cachedId = localStorage.getItem("shop_code_" + paramS);
+          const cachedTitle = localStorage.getItem("shop_title_" + paramS);
+          if (cachedId) {
+            currentSheetId = cachedId;
+            currentShopTitle = cachedTitle || paramS;
+          }
+
+          // 2. Tra cứu đồng bộ từ bảng SHOPS trên Master Spreadsheet
+          resolveShopOnline(paramS);
+        } else if (paramSheet) {
           const parsed = extractSpreadsheetId(paramSheet);
           if (parsed) {
-            localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsed);
-            return parsed;
+            currentSheetId = parsed;
+            try {
+              localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsed);
+            } catch (e) {}
+          }
+        } else {
+          // Kiểm tra bộ nhớ máy
+          const savedCode = localStorage.getItem(STORAGE_KEY_SHOP_CODE);
+          if (savedCode) {
+            currentShopCode = savedCode;
+            const cachedId = localStorage.getItem("shop_code_" + savedCode);
+            if (cachedId) {
+              currentSheetId = cachedId;
+              currentShopTitle = localStorage.getItem("shop_title_" + savedCode) || savedCode;
+            }
+            resolveShopOnline(savedCode);
+          } else {
+            const savedSheet = localStorage.getItem(STORAGE_KEY_CUSTOM_SHEET);
+            if (savedSheet && extractSpreadsheetId(savedSheet)) {
+              currentSheetId = savedSheet;
+            }
           }
         }
-        const cached = localStorage.getItem(STORAGE_KEY_CUSTOM_SHEET);
-        if (cached && extractSpreadsheetId(cached)) {
-          return cached;
-        }
-      } catch (e) {}
-      return DEFAULT_SPREADSHEET_ID;
+      } catch (err) {
+        console.warn("Lỗi khởi tạo context shop:", err);
+      }
     })();
 
     function getSpreadsheetUrl() {
@@ -2002,7 +2080,130 @@
     function getBaseShareUrl() {
       const loc = window.location;
       const base = loc.origin + loc.pathname;
-      return base + "?sheet=" + currentSheetId;
+      if (currentShopCode) {
+        return base + "?s=" + encodeURIComponent(currentShopCode);
+      }
+      if (currentSheetId && currentSheetId !== DEFAULT_SPREADSHEET_ID) {
+        return base + "?sheet=" + currentSheetId;
+      }
+      return base;
+    }
+
+    // Tra cứu mã shop online từ bảng SHOPS trên Master Sheet (siêu tốc qua GViz)
+    async function resolveShopOnline(shopCode) {
+      if (!shopCode) return;
+      const codeClean = shopCode.toLowerCase().trim();
+      const gvizShopsUrl = "https://docs.google.com/spreadsheets/d/" + DEFAULT_SPREADSHEET_ID + "/gviz/tq?tqx=out:json&sheet=SHOPS";
+      
+      try {
+        const resp = await fetch(gvizShopsUrl);
+        if (resp.ok) {
+          const text = await resp.text();
+          const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+          const gvizData = JSON.parse(jsonStr);
+          const rows = (gvizData && gvizData.table) ? gvizData.table.rows : [];
+          
+          let found = null;
+          for (let r of rows) {
+            const c0 = (r.c && r.c[0] && r.c[0].v ? r.c[0].v.toString().toLowerCase().trim() : '');
+            if (c0 === codeClean) {
+              found = {
+                code: c0,
+                title: (r.c && r.c[1] && r.c[1].v ? r.c[1].v.toString().trim() : ''),
+                sheetId: (r.c && r.c[2] && r.c[2].v ? r.c[2].v.toString().trim() : '')
+              };
+              break;
+            }
+          }
+
+          if (found && found.sheetId) {
+            const needReload = (currentSheetId !== found.sheetId);
+            currentSheetId = found.sheetId;
+            currentShopTitle = found.title;
+            currentShopCode = found.code;
+
+            try {
+              localStorage.setItem("shop_code_" + codeClean, found.sheetId);
+              localStorage.setItem("shop_title_" + codeClean, found.title);
+              localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, found.sheetId);
+              localStorage.setItem(STORAGE_KEY_SHOP_CODE, codeClean);
+              localStorage.setItem(STORAGE_KEY_SHOP_TITLE, found.title);
+            } catch (e) {}
+
+            const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+            if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+
+            if (needReload) {
+              loadMasterStaffList();
+              if (document.getElementById('reportView').style.display !== 'none') {
+                loadReportData(true);
+              }
+            }
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("GViz SHOPS lookup warn, falling back to Apps Script:", err);
+      }
+
+      // Fallback qua Apps Script JSONP
+      resolveShopViaAppsScript(codeClean);
+    }
+
+    // Tra cứu mã shop qua Apps Script JSONP
+    function resolveShopViaAppsScript(shopCode) {
+      const cbName = "cb_resolve_" + Math.floor(Math.random() * 1000000);
+      window[cbName] = function(res) {
+        delete window[cbName];
+        if (res && res.success && res.sheetId) {
+          const needReload = (currentSheetId !== res.sheetId);
+          currentSheetId = res.sheetId;
+          currentShopTitle = res.sheetTitle || shopCode;
+          currentShopCode = res.shopCode;
+          try {
+            localStorage.setItem("shop_code_" + shopCode, res.sheetId);
+            localStorage.setItem("shop_title_" + shopCode, currentShopTitle);
+            localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, res.sheetId);
+            localStorage.setItem(STORAGE_KEY_SHOP_CODE, shopCode);
+          } catch (e) {}
+
+          const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+          if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+
+          if (needReload) {
+            loadMasterStaffList();
+            if (document.getElementById('reportView').style.display !== 'none') {
+              loadReportData(true);
+            }
+          }
+        }
+      };
+      const script = document.createElement('script');
+      script.src = SCRIPT_URL + "?action=resolveShop&shopCode=" + encodeURIComponent(shopCode) + "&callback=" + cbName;
+      document.body.appendChild(script);
+    }
+
+    // Tự động nhận diện khi người dùng dán link Sheet vào ô nhập
+    function handleSheetUrlInput(val) {
+      const parsedId = extractSpreadsheetId(val);
+      const codeInput = document.getElementById('inputCustomShopCode');
+      if (!parsedId || !codeInput || codeInput.value.trim() !== '') return;
+
+      // Thử đọc tên file qua GViz để gợi ý mã số (VD: 1841)
+      const gvizTitleUrl = "https://docs.google.com/spreadsheets/d/" + parsedId + "/gviz/tq?tqx=out:json";
+      fetch(gvizTitleUrl)
+        .then(res => res.text())
+        .then(txt => {
+          // Bóc tách title nếu có trong phản hồi
+          const titleMatch = txt.match(/"name":\s*"([^"]+)"/i) || txt.match(/sheet=([^&"]+)/i);
+          if (titleMatch && titleMatch[1]) {
+            const extracted = extractShopCodeFromName(decodeURIComponent(titleMatch[1]));
+            if (extracted && !codeInput.value.trim()) {
+              codeInput.value = extracted;
+            }
+          }
+        })
+        .catch(() => {});
     }
 
     // =========================================================================
@@ -2012,14 +2213,18 @@
       const modal = document.getElementById('settingsModal');
       if (!modal) return;
       
-      const isDefault = (currentSheetId === DEFAULT_SPREADSHEET_ID);
+      const isDefault = (currentSheetId === DEFAULT_SPREADSHEET_ID && !currentShopCode);
       const shortId = currentSheetId.length > 18 ? currentSheetId.substring(0, 8) + '...' + currentSheetId.substring(currentSheetId.length - 6) : currentSheetId;
       
       const statusEl = document.getElementById('settingsCurrentSheetText');
       if (statusEl) {
-        statusEl.textContent = isDefault 
-          ? `Trang tính mặc định (${shortId})` 
-          : `Trang tính tùy chỉnh (${shortId})`;
+        if (currentShopCode) {
+          statusEl.textContent = `Cửa hàng: ${currentShopTitle || currentShopCode} (Mã: ${currentShopCode})`;
+        } else if (!isDefault) {
+          statusEl.textContent = `Trang tính tùy chỉnh (${shortId})`;
+        } else {
+          statusEl.textContent = `Trang tính mặc định (${shortId})`;
+        }
       }
         
       const linkEl = document.getElementById('settingsCurrentSheetLink');
@@ -2027,6 +2232,9 @@
       
       const inputEl = document.getElementById('inputCustomSheetUrl');
       if (inputEl) inputEl.value = isDefault ? "" : getSpreadsheetUrl();
+
+      const codeInput = document.getElementById('inputCustomShopCode');
+      if (codeInput) codeInput.value = currentShopCode || "";
       
       const shareEl = document.getElementById('shareableEmployeeLink');
       if (shareEl) shareEl.value = getBaseShareUrl();
@@ -2045,50 +2253,115 @@
       }
     }
 
-    function saveCustomSheetSetting() {
-      const input = document.getElementById('inputCustomSheetUrl').value.trim();
-      if (!input) {
+    function saveCustomShopSetting() {
+      const inputUrl = document.getElementById('inputCustomSheetUrl').value.trim();
+      let inputCode = document.getElementById('inputCustomShopCode').value.trim();
+
+      if (!inputUrl) {
         showToast("Vui lòng dán link hoặc ID Google Sheet!", "error");
         return;
       }
-      const parsedId = extractSpreadsheetId(input);
+      const parsedId = extractSpreadsheetId(inputUrl);
       if (!parsedId) {
         showToast("Link Google Sheet không hợp lệ! Vui lòng kiểm tra lại.", "error");
         return;
       }
-      
-      currentSheetId = parsedId;
-      try {
-        localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsedId);
-        // Xóa cache danh sách nhân viên cũ để tải mới từ sheet này
-        localStorage.removeItem(STORAGE_KEY_STAFF_LIST);
-      } catch (e) {}
-      
-      const newUrl = window.location.origin + window.location.pathname + "?sheet=" + parsedId;
-      try {
-        window.history.replaceState({ path: newUrl }, '', newUrl);
-      } catch (e) {}
-      
-      const shareEl = document.getElementById('shareableEmployeeLink');
-      if (shareEl) shareEl.value = newUrl;
-      
-      const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
-      if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
-      
-      showToast("✅ Đã kết nối Google Sheet thành công!", "success");
-      closeSettingsModal();
-      
-      // Tải lại dữ liệu nhân viên & báo cáo theo sheet mới
-      loadMasterStaffList();
-      if (document.getElementById('reportView').style.display !== 'none') {
-        loadReportData(true);
+
+      const saveBtn = document.getElementById('btnSaveSheetSetting');
+      const origText = saveBtn ? saveBtn.innerHTML : '';
+      if (saveBtn) {
+        saveBtn.innerHTML = '<span>⏳ Đang kết nối & đăng ký mã...</span>';
+        saveBtn.disabled = true;
       }
+
+      const cbName = "cb_reg_" + Math.floor(Math.random() * 1000000);
+      let timeoutId = setTimeout(() => {
+        if (window[cbName]) {
+          delete window[cbName];
+          if (saveBtn) {
+            saveBtn.innerHTML = origText;
+            saveBtn.disabled = false;
+          }
+          // Fallback lưu trực tiếp theo Sheet ID nếu mạng GAS phản hồi lâu
+          currentSheetId = parsedId;
+          const fallbackCode = inputCode || "shop";
+          currentShopCode = fallbackCode;
+          try {
+            localStorage.setItem("shop_code_" + fallbackCode, parsedId);
+            localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsedId);
+            localStorage.setItem(STORAGE_KEY_SHOP_CODE, fallbackCode);
+          } catch (e) {}
+          const newUrl = window.location.origin + window.location.pathname + "?s=" + fallbackCode;
+          try { window.history.replaceState({ path: newUrl }, '', newUrl); } catch (e) {}
+          const shareEl = document.getElementById('shareableEmployeeLink');
+          if (shareEl) shareEl.value = newUrl;
+          showToast(`✅ Đã lưu cấu hình với mã: ?s=${fallbackCode}`, "success");
+          closeSettingsModal();
+          loadMasterStaffList();
+        }
+      }, 10000);
+
+      window[cbName] = function(res) {
+        clearTimeout(timeoutId);
+        delete window[cbName];
+        if (saveBtn) {
+          saveBtn.innerHTML = origText;
+          saveBtn.disabled = false;
+        }
+
+        if (res && res.success) {
+          const registeredCode = res.shopCode || inputCode || "shop";
+          currentSheetId = res.sheetId || parsedId;
+          currentShopCode = registeredCode;
+          currentShopTitle = res.sheetTitle || "";
+
+          try {
+            localStorage.setItem("shop_code_" + registeredCode, currentSheetId);
+            localStorage.setItem("shop_title_" + registeredCode, currentShopTitle);
+            localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, currentSheetId);
+            localStorage.setItem(STORAGE_KEY_SHOP_CODE, registeredCode);
+            localStorage.setItem(STORAGE_KEY_SHOP_TITLE, currentShopTitle);
+            localStorage.removeItem(STORAGE_KEY_STAFF_LIST);
+          } catch (e) {}
+
+          const newShareUrl = window.location.origin + window.location.pathname + "?s=" + registeredCode;
+          try {
+            window.history.replaceState({ path: newShareUrl }, '', newShareUrl);
+          } catch (e) {}
+
+          const shareEl = document.getElementById('shareableEmployeeLink');
+          if (shareEl) shareEl.value = newShareUrl;
+
+          const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+          if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+
+          showToast(`✅ Đã tạo link rút gọn: ?s=${registeredCode}`, "success");
+          closeSettingsModal();
+
+          loadMasterStaffList();
+          if (document.getElementById('reportView').style.display !== 'none') {
+            loadReportData(true);
+          }
+        } else {
+          showToast(res && res.message ? res.message : "Không thể đăng ký mã shop!", "error");
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = SCRIPT_URL + "?action=registerShop&sheetId=" + encodeURIComponent(parsedId) +
+                   "&shopCode=" + encodeURIComponent(inputCode) +
+                   "&callback=" + cbName;
+      document.body.appendChild(script);
     }
 
     function resetDefaultSheetSetting() {
       currentSheetId = DEFAULT_SPREADSHEET_ID;
+      currentShopCode = "";
+      currentShopTitle = "";
       try {
         localStorage.removeItem(STORAGE_KEY_CUSTOM_SHEET);
+        localStorage.removeItem(STORAGE_KEY_SHOP_CODE);
+        localStorage.removeItem(STORAGE_KEY_SHOP_TITLE);
         localStorage.removeItem(STORAGE_KEY_STAFF_LIST);
       } catch (e) {}
       
@@ -2112,6 +2385,8 @@
     async function copyShareableEmployeeLink() {
       const linkInput = document.getElementById('shareableEmployeeLink');
       if (!linkInput || !linkInput.value) return;
+      const copyBtn = document.getElementById('btnCopyShareLink');
+      const origText = copyBtn ? copyBtn.innerHTML : '';
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(linkInput.value);
@@ -2119,10 +2394,18 @@
           linkInput.select();
           document.execCommand('copy');
         }
+        if (copyBtn) {
+          copyBtn.innerHTML = '<span>✅</span> <span>Đã sao chép!</span>';
+          setTimeout(() => { if (copyBtn) copyBtn.innerHTML = origText; }, 2500);
+        }
         showToast("📋 Đã copy link gửi cho nhân viên!", "success");
       } catch (err) {
         linkInput.select();
         document.execCommand('copy');
+        if (copyBtn) {
+          copyBtn.innerHTML = '<span>✅</span> <span>Đã sao chép!</span>';
+          setTimeout(() => { if (copyBtn) copyBtn.innerHTML = origText; }, 2500);
+        }
         showToast("📋 Đã copy link gửi cho nhân viên!", "success");
       }
     }
@@ -2183,8 +2466,12 @@
       const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
       if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
 
-      // Thông báo nhẹ nếu đang dùng Sheet riêng tùy chỉnh
-      if (currentSheetId !== DEFAULT_SPREADSHEET_ID) {
+      // Thông báo nhẹ nếu đang dùng Mã Shop hoặc Sheet riêng tùy chỉnh
+      if (currentShopCode) {
+        setTimeout(() => {
+          showToast(`🌿 Đang kết nối cửa hàng: ${currentShopTitle || currentShopCode} (Mã: ${currentShopCode})`, "info");
+        }, 600);
+      } else if (currentSheetId !== DEFAULT_SPREADSHEET_ID) {
         const shortId = currentSheetId.length > 18 ? currentSheetId.substring(0, 8) + '...' + currentSheetId.substring(currentSheetId.length - 6) : currentSheetId;
         setTimeout(() => {
           showToast(`🌿 Đang kết nối Sheet riêng: ${shortId}`, "info");
@@ -2688,6 +2975,7 @@
       const payload = {
         tx_id: tx_id,
         spreadsheetId: currentSheetId,
+        shop: currentShopCode,
         khachHang: khachHang,
         sdt: sdt,
         sanPham: sanPham,
