@@ -69,13 +69,79 @@ function showModalDialog() {
 }
 
 /**
- * 4. Hàm phục vụ Web App độc lập khi người dùng truy cập qua URL Web App
+ * 4. Hàm phục vụ Web App độc lập hoặc API nhận dữ liệu từ GitHub Pages
  */
 function doGet(e) {
+  // 1. Phản hồi API kiểm tra kết nối từ GitHub Pages
+  if (e && e.parameter) {
+    if (e.parameter.action === "ping") {
+      return createJsonResponse({
+        success: true,
+        message: "Kết nối thành công tới Google Apps Script!",
+        spreadsheetUrl: SPREADSHEET_URL
+      }, e.parameter.callback);
+    }
+
+    // 2. Nhận lưu dữ liệu qua GET (hỗ trợ JSONP chống chặn CORS trên GitHub Pages)
+    if (e.parameter.action === "save" || (e.parameter.khachHang && e.parameter.sdt)) {
+      let data = e.parameter;
+      if (typeof data.chienGia === "string") {
+        data.chienGia = (data.chienGia.toLowerCase() === "true" || data.chienGia === "1");
+      }
+      const result = saveCustomerData(data);
+      return createJsonResponse(result, e.parameter.callback);
+    }
+  }
+
+  // 3. Mặc định mở giao diện Web App
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Nhập Dữ Liệu Khách Hàng - Chiến Giá")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Xử lý yêu cầu POST gửi từ GitHub Pages
+ */
+function doPost(e) {
+  try {
+    let data = {};
+    if (e.parameter && (e.parameter.khachHang || e.parameter.sdt)) {
+      data = e.parameter;
+    } else if (e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (parseErr) {
+        data = e.parameter || {};
+      }
+    }
+
+    if (typeof data.chienGia === "string") {
+      data.chienGia = (data.chienGia.toLowerCase() === "true" || data.chienGia === "1");
+    }
+
+    const result = saveCustomerData(data);
+    return createJsonResponse(result, e.parameter ? e.parameter.callback : null);
+  } catch (error) {
+    return createJsonResponse({
+      success: false,
+      message: "Lỗi doPost: " + error.toString()
+    }, e && e.parameter ? e.parameter.callback : null);
+  }
+}
+
+/**
+ * Hàm hỗ trợ xuất JSON hoặc JSONP (nếu có callback)
+ */
+function createJsonResponse(data, callback) {
+  let outputText = JSON.stringify(data);
+  if (callback) {
+    outputText = callback + "(" + outputText + ");";
+    return ContentService.createTextOutput(outputText)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(outputText)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**

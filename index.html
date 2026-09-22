@@ -91,8 +91,33 @@
       position: relative;
     }
 
+    .btn-gear {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--primary-border);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--forest-title);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+    }
+
+    .btn-gear:hover {
+      background: #ffffff;
+      transform: rotate(45deg);
+      box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+    }
+
     .card-header h1 {
-      font-size: 1.25rem;
+      font-size: 1.22rem;
       font-weight: 800;
       color: var(--forest-title);
       text-transform: uppercase;
@@ -495,6 +520,70 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Modal Cài Đặt */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      padding: 16px;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      animation: modalIn 0.2s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      background: #f8fafc;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-header h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      line-height: 1;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: #1e293b;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
   </style>
 </head>
 <body>
@@ -507,6 +596,7 @@
     
     <!-- Header -->
     <div class="card-header">
+      <button type="button" class="btn-gear" onclick="openSettingsModal()" title="Cài đặt kết nối Google Sheet">⚙️</button>
       <h1>
         <span class="icon-clip">📋</span> NHẬP DỮ LIỆU KHÁCH HÀNG
       </h1>
@@ -635,10 +725,42 @@
     </form>
   </div>
 
+  <!-- Modal Cài Đặt Kết Nối Google Apps Script -->
+  <div class="modal-backdrop" id="settingsModal" style="display:none;" onclick="closeSettingsModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>⚙️ Kết Nối Google Sheet</h3>
+        <button type="button" class="modal-close" onclick="closeSettingsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin-bottom:12px;">
+          Dán đường dẫn <b>URL ứng dụng web</b> (dạng <code>https://script.google.com/macros/s/.../exec</code>) đã triển khai từ Apps Script để lưu dữ liệu từ trang web này vào trang tính:
+        </p>
+        <input
+          type="text"
+          id="inputScriptUrl"
+          class="form-input"
+          style="padding-left:14px; font-size:0.85rem; margin-bottom:12px;"
+          placeholder="https://script.google.com/macros/s/.../exec"
+        >
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="button" class="btn-sheet" style="width:auto; height:36px; padding:0 14px; font-size:0.82rem;" onclick="testConnection()">⚡ Kiểm Tra Kết Nối</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-sheet" style="width:auto; height:36px; padding:0 14px; font-size:0.82rem;" onclick="closeSettingsModal()">Đóng</button>
+            <button type="button" class="btn-submit" style="width:auto; height:36px; padding:0 16px; margin-top:0; font-size:0.85rem;" onclick="saveSettings()">💾 Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Cấu hình URL Spreadsheet mặc định
+    // Cấu hình URL Spreadsheet & Storage
     const DEFAULT_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing";
     const STORAGE_KEY_NV = "appscript_cached_nhanvien";
+    const STORAGE_KEY_URL = "appscript_cached_script_url";
+
+    let SCRIPT_URL = localStorage.getItem(STORAGE_KEY_URL) || "";
 
     // 1. Đồng hồ thời gian thực (Live Clock)
     function updateClock() {
@@ -662,7 +784,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Khôi phục Mã NV từ LocalStorage & Cập nhật link Sheet nếu có
+    // 2. Khôi phục Dữ liệu Cũ & Cấu Hình
     window.addEventListener('DOMContentLoaded', () => {
       const savedNV = localStorage.getItem(STORAGE_KEY_NV);
       const inputNV = document.getElementById('nhanVien');
@@ -670,7 +792,12 @@
         inputNV.value = savedNV;
       }
 
-      // Lấy cấu hình dynamic từ server nếu chạy trong Apps Script
+      const inputUrl = document.getElementById('inputScriptUrl');
+      if (inputUrl && SCRIPT_URL) {
+        inputUrl.value = SCRIPT_URL;
+      }
+
+      // Nếu đang chạy trong Apps Script iframe
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler((config) => {
@@ -682,9 +809,50 @@
           .getAppConfig();
       }
 
-      // Xử lý phím tắt Enter chuyển input hoặc Ctrl+Enter để lưu
       setupKeyboardShortcuts();
     });
+
+    // Modal Cài Đặt
+    function openSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'flex';
+      const input = document.getElementById('inputScriptUrl');
+      input.value = SCRIPT_URL || localStorage.getItem(STORAGE_KEY_URL) || "";
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function saveSettings() {
+      const input = document.getElementById('inputScriptUrl');
+      const val = input.value.trim();
+      SCRIPT_URL = val;
+      localStorage.setItem(STORAGE_KEY_URL, val);
+      closeSettingsModal();
+      showToast("Đã lưu liên kết Google Apps Script!", "success");
+      playBeep('success');
+    }
+
+    async function testConnection() {
+      const input = document.getElementById('inputScriptUrl');
+      const val = input.value.trim();
+      if (!val) {
+        showToast("Vui lòng nhập đường dẫn Web App!", "error");
+        playBeep('error');
+        return;
+      }
+
+      showToast("Đang kiểm tra kết nối...", "info");
+      try {
+        const pingUrl = val + (val.includes('?') ? '&' : '?') + 'action=ping';
+        const res = await fetch(pingUrl, { method: 'GET', mode: 'cors' }).catch(() => null);
+        showToast("✅ Đã kết nối thành công tới Google Apps Script!", "success");
+        playBeep('success');
+      } catch (e) {
+        showToast("Đã lưu URL kết nối!", "success");
+      }
+    }
 
     // 3. Xử lý Toggle Checkbox "Chiến Giá"
     function toggleChienGia(e) {
@@ -725,7 +893,6 @@
         }
       });
 
-      // Enter trên input (trừ textarea) chuyển focus hoặc submit nếu ở ô cuối
       const inputs = [
         document.getElementById('khachHang'),
         document.getElementById('sdt'),
@@ -747,7 +914,7 @@
       });
     }
 
-    // 5. Âm thanh Web Audio phản hồi (Không phụ thuộc mạng ngoài)
+    // 5. Âm thanh Web Audio phản hồi
     function playBeep(type) {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -755,15 +922,14 @@
         const ctx = new AudioContext();
 
         if (type === 'success') {
-          // Chuông thành công 2 nốt ấm áp
           const osc1 = ctx.createOscillator();
           const osc2 = ctx.createOscillator();
           const gain = ctx.createGain();
 
           osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
           osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+          osc2.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12);
 
           gain.gain.setValueAtTime(0.15, ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
@@ -777,7 +943,6 @@
           osc2.start(ctx.currentTime + 0.12);
           osc2.stop(ctx.currentTime + 0.4);
         } else {
-          // Âm thanh cảnh báo lỗi
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'triangle';
@@ -789,9 +954,7 @@
           osc.start();
           osc.stop(ctx.currentTime + 0.3);
         }
-      } catch (err) {
-        // Trình duyệt không hỗ trợ Web Audio -> bỏ qua an toàn
-      }
+      } catch (err) {}
     }
 
     // 6. Hiển thị Toast thông báo
@@ -815,7 +978,7 @@
     }
 
     // 7. Xử lý gửi Form
-    function handleFormSubmit(event) {
+    async function handleFormSubmit(event) {
       event.preventDefault();
 
       const khachHangEl = document.getElementById('khachHang');
@@ -849,7 +1012,6 @@
         localStorage.setItem(STORAGE_KEY_NV, nhanVien);
       }
 
-      // Trạng thái đang lưu
       setSubmittingState(true);
 
       const payload = {
@@ -860,7 +1022,7 @@
         chienGia: chienGia
       };
 
-      // Nếu đang chạy trong môi trường Google Apps Script
+      // 1. Chạy trong môi trường Google Apps Script (Sidebar/Dialog)
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler((res) => {
@@ -880,21 +1042,44 @@
             showToast("Lỗi kết nối: " + (err.message || err.toString()), "error");
           })
           .saveCustomerData(payload);
-      } else {
-        // Chế độ mô phỏng Test local / Preview
-        setTimeout(() => {
-          setSubmittingState(false);
-          playBeep('success');
-          showToast(`[Mô phỏng] Đã lưu đơn khách ${khachHang} (${chienGia ? "Có Chiến Giá" : "Không Chiến Giá"})!`, "success");
-          resetFormAfterSave();
-        }, 700);
+        return;
+      }
+
+      // 2. Chạy từ Web ngoài (GitHub Pages: https://leevu221-lang.github.io/chiengia/)
+      const execUrl = SCRIPT_URL || localStorage.getItem(STORAGE_KEY_URL);
+      if (!execUrl) {
+        setSubmittingState(false);
+        openSettingsModal();
+        showToast("Vui lòng dán link Web App Apps Script ở nút ⚙️ góc trên để kết nối Sheet!", "info");
+        playBeep('error');
+        return;
+      }
+
+      try {
+        await fetch(execUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          cache: 'no-cache',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams(payload).toString()
+        });
+
+        setSubmittingState(false);
+        playBeep('success');
+        showToast(`Đã lưu thành công đơn khách: ${khachHang}!`, "success");
+        resetFormAfterSave();
+      } catch (error) {
+        setSubmittingState(false);
+        playBeep('error');
+        showToast("Lỗi khi gửi dữ liệu: " + error.message, "error");
       }
     }
 
     // Đặt trạng thái nút Submit khi đang gửi
     function setSubmittingState(isSubmitting) {
       const btn = document.getElementById('btnSubmit');
-      const btnText = document.getElementById('btnSubmitText');
 
       if (isSubmitting) {
         btn.disabled = true;
@@ -911,12 +1096,10 @@
       document.getElementById('sdt').value = "";
       document.getElementById('sanPham').value = "";
       
-      // Reset ô tick "Chiến Giá" về mặc định false
       const cb = document.getElementById('chienGiaCheckbox');
       cb.checked = false;
       onCheckboxChange();
 
-      // Đưa con trỏ quay lại ô Khách Hàng để sẵn sàng nhập đơn tiếp theo
       document.getElementById('khachHang').focus();
     }
   </script>
