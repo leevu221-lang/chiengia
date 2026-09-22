@@ -354,6 +354,21 @@ function autoCapitalizeWords(str) {
 }
 
 /**
+ * Chuẩn hóa tên nhân viên & tự động sửa lỗi chính tả (ví dụ: NGUYÊN -> NGUYỄN HÙNG MẠNH - 38847)
+ */
+function normalizeStaffName(name) {
+  if (!name) return "";
+  let str = name.toString().trim();
+  str = str.replace(/NGUYÊN(\s+HÙNG\s+MẠNH)/gi, "NGUYỄN$1");
+  str = str.replace(/NGUYEN(\s+HUNG\s+MANH)/gi, "NGUYỄN HÙNG MẠNH");
+  str = str.replace(/NGUYEN(\s+HÙNG\s+MẠNH)/gi, "NGUYỄN$1");
+  if (/38847/.test(str) && /nguy/i.test(str)) {
+    return "NGUYỄN HÙNG MẠNH - 38847";
+  }
+  return str;
+}
+
+/**
  * 4. HÀM CHÍNH LƯU DỮ LIỆU VÀO SHEET "DATA"
  * Cột 1 (A): STT
  * Cột 2 (B): KHÁCH HÀNG
@@ -394,7 +409,7 @@ function saveCustomerData(formData) {
     // Giữ số 0 đầu bằng dấu nháy đơn
     const sdtFormatted = sdtRaw.startsWith("'") ? sdtRaw : `'${sdtRaw}`;
 
-    const nhanVien = (formData.nhanVien || "").trim() || "Chưa phân công";
+    const nhanVien = normalizeStaffName((formData.nhanVien || "").trim()) || "Chưa phân công";
     const sanPham = autoCapitalizeWords(formData.sanPham || "");
     const giaSanPham = (formData.giaSanPham || "").trim();
     const isChienGia = Boolean(formData.chienGia);
@@ -518,7 +533,7 @@ function updateSummarySheetInternal(ss) {
   const summaryMap = {};
 
   dataValues.forEach(row => {
-    const nhanVien = (row[3] || "").toString().trim() || "Chưa phân công";
+    const nhanVien = normalizeStaffName((row[3] || "").toString().trim()) || "Chưa phân công";
     const chienGiaVal = (row[4] || "").toString().trim().toLowerCase();
     
     // Xử lý chuẩn xác thời gian từ Date object hoặc string
@@ -661,6 +676,7 @@ function updateSummarySheetInternal(ss) {
  */
 function updateSummaryIncremental(ss, fullTimeStr, nhanVien, isChienGia) {
   try {
+    nhanVien = normalizeStaffName(nhanVien);
     const sheetSummary = getOrCreateSheet(ss, SHEET_TONG_HOP_NAME);
     const lastRow = sheetSummary.getLastRow();
 
@@ -823,7 +839,7 @@ function getReportData(dateFilter, limit, customSheetId) {
       const stt = row[0] || (startRow + i);
       const khachHang = (row[1] || "").toString().trim();
       const sdt = (row[2] || "").toString().trim().replace(/^'/, "");
-      const nhanVien = (row[3] || "").toString().trim() || "Chưa phân công";
+      const nhanVien = normalizeStaffName((row[3] || "").toString().trim()) || "Chưa phân công";
       const chienGiaVal = (row[4] || "").toString().trim().toLowerCase();
       const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
 
@@ -1054,7 +1070,8 @@ function getStaffList(customSheetId) {
     const values = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
     const list = [];
     values.forEach(r => {
-      const val = (r[0] || "").toString().trim();
+      let val = (r[0] || "").toString().trim();
+      val = normalizeStaffName(val);
       if (val && !list.includes(val)) {
         list.push(val);
       }

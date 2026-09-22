@@ -1631,6 +1631,7 @@
             autocomplete="off"
             oninput="handleStaffInput(this.value)"
             onfocus="handleStaffFocus()"
+            onblur="handleStaffBlur()"
             onkeydown="handleStaffKeydown(event)"
           >
           <div id="staffSuggestionsDropdown" class="suggestions-dropdown" style="display:none;"></div>
@@ -2462,6 +2463,19 @@
     const STORAGE_KEY_NV = "appscript_cached_nhanvien";
     const STORAGE_KEY_STAFF_LIST = "appscript_master_staff_list";
 
+    // Chuẩn hóa tên nhân viên & tự động sửa lỗi chính tả (ví dụ NGUYÊN -> NGUYỄN HÙNG MẠNH - 38847)
+    function normalizeStaffName(name) {
+      if (!name) return "";
+      let str = String(name).trim();
+      str = str.replace(/NGUYÊN(\s+HÙNG\s+MẠNH)/gi, "NGUYỄN$1");
+      str = str.replace(/NGUYEN(\s+HUNG\s+MANH)/gi, "NGUYỄN HÙNG MẠNH");
+      str = str.replace(/NGUYEN(\s+HÙNG\s+MẠNH)/gi, "NGUYỄN$1");
+      if (/38847/.test(str) && /nguy/i.test(str)) {
+        return "NGUYỄN HÙNG MẠNH - 38847";
+      }
+      return str;
+    }
+
     // Danh sách nhân viên tải từ sheet "nhân viên"
     let masterStaffList = [];
     let currentFilteredSuggestions = [];
@@ -2510,7 +2524,16 @@
 
     // 2. Khởi tạo khi trang tải
     window.addEventListener('DOMContentLoaded', () => {
-      const savedNV = localStorage.getItem(STORAGE_KEY_NV);
+      let savedNV = "";
+      try {
+        savedNV = localStorage.getItem(STORAGE_KEY_NV) || "";
+      } catch (e) {}
+
+      if (savedNV) {
+        savedNV = normalizeStaffName(savedNV);
+        try { localStorage.setItem(STORAGE_KEY_NV, savedNV); } catch (e) {}
+      }
+
       const inputNV = document.getElementById('nhanVien');
       if (savedNV && inputNV) {
         inputNV.value = savedNV;
@@ -2663,7 +2686,8 @@
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            masterStaffList = parsed;
+            masterStaffList = parsed.map(s => normalizeStaffName(s)).filter(Boolean);
+            syncCurrentInputWithMasterStaff();
           }
         }
       } catch (e) {}
@@ -2680,14 +2704,16 @@
           rows.forEach(r => {
             const c = r.c || [];
             // Cột B (index 1) là cột NHÂN VIÊN
-            const val = c[1] ? String(c[1].v || "").trim() : "";
+            const rawVal = c[1] ? String(c[1].v || "").trim() : "";
+            const val = normalizeStaffName(rawVal);
             if (val && !list.includes(val)) {
               list.push(val);
             }
           });
           if (list.length > 0) {
             masterStaffList = list;
-            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(list));
+            try { localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(list)); } catch (e) {}
+            syncCurrentInputWithMasterStaff();
             return;
           }
         }
@@ -2697,8 +2723,9 @@
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run.withSuccessHandler((res) => {
           if (res && res.success && res.list && res.list.length > 0) {
-            masterStaffList = res.list;
-            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(res.list));
+            masterStaffList = res.list.map(s => normalizeStaffName(s)).filter(Boolean);
+            try { localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(masterStaffList)); } catch (e) {}
+            syncCurrentInputWithMasterStaff();
           }
         }).getStaffList(currentSheetId);
         return;
@@ -2710,8 +2737,9 @@
         window[cbName] = function(res) {
           delete window[cbName];
           if (res && res.success && res.list && res.list.length > 0) {
-            masterStaffList = res.list;
-            localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(res.list));
+            masterStaffList = res.list.map(s => normalizeStaffName(s)).filter(Boolean);
+            try { localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(masterStaffList)); } catch (e) {}
+            syncCurrentInputWithMasterStaff();
           }
         };
         const s = document.createElement('script');
@@ -2757,6 +2785,48 @@
         name: itemStr,
         code: ""
       };
+    }
+
+    // Đồng bộ ô nhập liệu nhân viên với danh sách chuẩn từ Google Sheet
+    function syncCurrentInputWithMasterStaff() {
+      const inputNV = document.getElementById('nhanVien');
+      if (!inputNV) return;
+
+      let currentVal = (inputNV.value || "").trim();
+      if (!currentVal) return;
+
+      // 1. Chuẩn hóa lỗi chính tả nếu có (ví dụ NGUYÊN -> NGUYỄN HÙNG MẠNH - 38847)
+      const normVal = normalizeStaffName(currentVal);
+      if (normVal !== currentVal) {
+        inputNV.value = normVal;
+        currentVal = normVal;
+        try { localStorage.setItem(STORAGE_KEY_NV, normVal); } catch (e) {}
+      }
+
+      if (!masterStaffList || masterStaffList.length === 0) return;
+
+      // 2. Tìm kiếm trong danh sách master xem có nhân viên nào trùng mã hoặc tên
+      const valTonesClean = removeVietnameseTones(currentVal);
+      const found = masterStaffList.find(staff => {
+        const p = parseStaffItem(staff);
+        // Khớp theo mã (ví dụ: 38847 hoặc có chứa mã 38847)
+        if (p.code && (currentVal === p.code || currentVal.includes(p.code))) return true;
+        // Khớp hoàn toàn không dấu
+        if (valTonesClean && (removeVietnameseTones(staff) === valTonesClean || removeVietnameseTones(p.name) === valTonesClean)) return true;
+        return false;
+      });
+
+      if (found && found !== inputNV.value) {
+        inputNV.value = found;
+        try { localStorage.setItem(STORAGE_KEY_NV, found); } catch (e) {}
+      }
+    }
+
+    function handleStaffBlur() {
+      // Đợi nhẹ 220ms để không chặn sự kiện click chuột trong dropdown gợi ý
+      setTimeout(() => {
+        syncCurrentInputWithMasterStaff();
+      }, 220);
     }
 
     // 4. Xử lý khi người dùng gõ ký tự vào ô Nhân Viên
@@ -2845,10 +2915,11 @@
 
     // 6. Khi người dùng click hoặc nhấn Enter chọn 1 nhân viên
     function selectStaffSuggestion(fullStaffString) {
+      const cleanString = normalizeStaffName(fullStaffString);
       const input = document.getElementById('nhanVien');
       if (input) {
-        input.value = fullStaffString;
-        localStorage.setItem(STORAGE_KEY_NV, fullStaffString);
+        input.value = cleanString;
+        try { localStorage.setItem(STORAGE_KEY_NV, cleanString); } catch (e) {}
       }
       closeStaffDropdown();
 
@@ -3009,7 +3080,7 @@
       const sdt = sdtEl.value.trim();
       const sanPham = autoCapitalizeWords(sanPhamEl.value.trim());
       const giaSanPham = giaSanPhamEl ? giaSanPhamEl.value.trim() : '';
-      const nhanVien = nhanVienEl.value.trim();
+      const nhanVien = normalizeStaffName(nhanVienEl.value.trim());
       const chienGia = Boolean(chienGiaEl.checked);
 
       if (!khachHang) {
@@ -3027,7 +3098,7 @@
       }
 
       if (nhanVien) {
-        localStorage.setItem(STORAGE_KEY_NV, nhanVien);
+        try { localStorage.setItem(STORAGE_KEY_NV, nhanVien); } catch (e) {}
       }
 
       // Khóa ngay lập tức trạng thái gửi
@@ -3626,7 +3697,7 @@
         const stt = c[0] ? (c[0].v || idx + 1) : idx + 1;
         const khachHang = c[1] ? (c[1].v || "") : "";
         const sdt = c[2] ? String(c[2].v || "").replace(/^'/, "") : "";
-        const nhanVien = c[3] ? String(c[3].v || "Chưa phân công") : "Chưa phân công";
+        const nhanVien = normalizeStaffName(c[3] ? String(c[3].v || "Chưa phân công") : "Chưa phân công");
         const chienGiaVal = c[4] ? String(c[4].v || "").toLowerCase() : "";
         const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
 
@@ -3864,7 +3935,7 @@
       // 2. Gom nhóm theo từng Nhân Viên
       const staffMap = {};
       filteredList.forEach(item => {
-        const nv = item.nhanVien || "Chưa phân công";
+        const nv = normalizeStaffName(item.nhanVien || "Chưa phân công");
         if (!staffMap[nv]) {
           staffMap[nv] = {
             nhanVien: nv,
