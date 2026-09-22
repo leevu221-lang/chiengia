@@ -945,6 +945,8 @@
       gap: 6px;
       font-weight: 700;
       color: #1e293b;
+      white-space: nowrap;
+      word-break: keep-all;
     }
 
     .staff-row-arrow {
@@ -2280,6 +2282,77 @@
       });
     }
 
+    function formatTableCloneForExport(tableClone) {
+      if (!tableClone) return;
+      // 1. Xóa các hàng chi tiết mở rộng
+      tableClone.querySelectorAll('.table-detail-row').forEach(r => r.remove());
+
+      // 2. Xóa các mũi tên dropdown mở rộng (không cần thiết trên ảnh tĩnh)
+      tableClone.querySelectorAll('.staff-row-arrow').forEach(a => a.remove());
+
+      tableClone.style.width = '100%';
+      tableClone.style.borderCollapse = 'collapse';
+      tableClone.style.fontSize = '0.9rem';
+
+      // 3. Header: Không ngắt dòng tiêu đề
+      tableClone.querySelectorAll('th').forEach(th => {
+        th.style.whiteSpace = 'nowrap';
+        th.style.padding = '12px 8px';
+        th.style.fontSize = '0.8rem';
+      });
+
+      // 4. QUAN TRỌNG: Cột "NHÂN VIÊN" hiển thị full tên, cấm tuyệt đối tự động xuống dòng
+      tableClone.querySelectorAll('tr').forEach(tr => {
+        const cells = tr.children;
+        if (cells.length >= 5) {
+          // Cột 1: STT
+          cells[0].style.width = '48px';
+          cells[0].style.textAlign = 'center';
+          cells[0].style.whiteSpace = 'nowrap';
+
+          // Cột 2: NHÂN VIÊN (Hiển thị đầy đủ 1 dòng duy nhất, không ngắt dòng)
+          cells[1].style.whiteSpace = 'nowrap';
+          cells[1].style.wordBreak = 'keep-all';
+          cells[1].style.overflow = 'visible';
+          cells[1].style.textAlign = 'left';
+          cells[1].style.padding = '11px 16px';
+
+          const userEl = cells[1].querySelector('.staff-row-user');
+          if (userEl) {
+            userEl.style.whiteSpace = 'nowrap';
+            userEl.style.wordBreak = 'keep-all';
+            userEl.style.display = 'inline-flex';
+            userEl.style.alignItems = 'center';
+            userEl.style.gap = '8px';
+            userEl.style.fontSize = '0.92rem';
+            userEl.style.color = '#0f172a';
+          }
+
+          // Cột 3: ĐƠN CHIẾN GIÁ
+          cells[2].style.width = '120px';
+          cells[2].style.textAlign = 'center';
+          cells[2].style.whiteSpace = 'nowrap';
+
+          // Cột 4: ĐƠN KHÔNG CHIẾN GIÁ
+          cells[3].style.width = '120px';
+          cells[3].style.textAlign = 'center';
+          cells[3].style.whiteSpace = 'nowrap';
+
+          // Cột 5: TỔNG SỐ ĐƠN
+          cells[4].style.width = '105px';
+          cells[4].style.textAlign = 'center';
+          cells[4].style.whiteSpace = 'nowrap';
+        }
+      });
+
+      // 5. Dòng TỔNG CỘNG
+      tableClone.querySelectorAll('tfoot td').forEach(td => {
+        td.style.whiteSpace = 'nowrap';
+        td.style.padding = '12px 10px';
+        td.style.fontWeight = '800';
+      });
+    }
+
     async function exportReportSection(type) {
       showToast("⏳ Đang chuẩn bị và xuất ảnh chất lượng cao...", "info");
 
@@ -2296,12 +2369,13 @@
       const dateHeaderEl = document.getElementById('reportHeaderDate');
       const dateFilterText = dateHeaderEl ? dateHeaderEl.textContent.trim() : `Ngày: ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
 
-      // Tạo container tạm thời offscreen chuẩn 520px
+      // Tạo container tạm thời offscreen: rộng 680px cho bảng danh sách để tên nhân viên nằm trọn vẹn trên 1 dòng
+      const exportWidth = (type === 'summary') ? '540px' : '680px';
       const container = document.createElement('div');
       container.style.position = 'fixed';
       container.style.left = '-9999px';
       container.style.top = '0';
-      container.style.width = '520px';
+      container.style.width = exportWidth;
       container.style.background = '#ffffff';
       container.style.borderRadius = '20px';
       container.style.padding = '22px 20px';
@@ -2324,7 +2398,7 @@
 
         container.innerHTML = `
           <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
-            <h2 style="font-size: 1.2rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
               📊 BÁO CÁO TỔNG HỢP KẾT QUẢ
             </h2>
             <div style="display: inline-block; background: #ffffff; padding: 4px 14px; border-radius: 9999px; font-size: 0.84rem; font-weight: 700; color: #047857; border: 1px solid #a7f3d0;">
@@ -2366,11 +2440,11 @@
         }
 
         const tableClone = tableSource.cloneNode(true);
-        tableClone.querySelectorAll('.table-detail-row').forEach(r => r.remove());
+        formatTableCloneForExport(tableClone);
 
         container.innerHTML = `
           <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
-            <h2 style="font-size: 1.2rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #065f46; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
               👥 BÁO CÁO CHI TIẾT THEO NHÂN VIÊN
             </h2>
             <div style="display: inline-block; background: #ffffff; padding: 4px 14px; border-radius: 9999px; font-size: 0.84rem; font-weight: 700; color: #047857; border: 1px solid #a7f3d0;">
@@ -2398,7 +2472,7 @@
 
         const tableSource = document.querySelector('.staff-table');
         const tableClone = tableSource ? tableSource.cloneNode(true) : document.createElement('div');
-        tableClone.querySelectorAll('.table-detail-row').forEach(r => r.remove());
+        formatTableCloneForExport(tableClone);
 
         container.innerHTML = `
           <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 18px; border-radius: 16px; text-align: center; border: 1.5px solid #a7f3d0; margin-bottom: 16px;">
