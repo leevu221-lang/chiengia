@@ -795,6 +795,32 @@
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
+    /* Footer tác giả */
+    .app-footer {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #94a3b8;
+      padding-top: 14px;
+      padding-bottom: 4px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .app-footer::before,
+    .app-footer::after {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 1px;
+      background-color: #cbd5e1;
+      opacity: 0.8;
+    }
+
     /* Header khu vực nhân viên & Switch Tab */
     .staff-header-actions {
       display: flex;
@@ -1496,6 +1522,11 @@
         </button>
       </div>
 
+      <!-- Dòng Footer tác giả -->
+      <div class="app-footer">
+        Design by Linh Vũ
+      </div>
+
     </form>
   </div>
 
@@ -1662,6 +1693,11 @@
       >
         <span>📑</span> <span>Mở Trên Google Sheet Gốc ↗</span>
       </a>
+
+      <!-- Dòng Footer tác giả -->
+      <div class="app-footer">
+        Design by Linh Vũ
+      </div>
 
     </div>
   </div>
