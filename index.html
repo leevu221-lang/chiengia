@@ -162,6 +162,17 @@
       transform: rotate(90deg);
     }
 
+    .btn-nav-refresh.refreshing {
+      animation: spinRefresh 0.75s linear infinite;
+      pointer-events: none;
+      opacity: 0.75;
+    }
+
+    @keyframes spinRefresh {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* Badge Đồng hồ thời gian thực */
     .clock-badge {
       display: inline-flex;
@@ -2566,6 +2577,9 @@
         }, 600);
       }
 
+      // Nạp sẵn cache báo cáo để hiển thị tức thì khi mở tab Báo Cáo
+      loadReportFromCache();
+
       // Tải danh sách nhân viên từ sheet "nhân viên"
       loadMasterStaffList();
     });
@@ -3120,6 +3134,28 @@
         chienGia: chienGia
       };
 
+      // Cập nhật ngay lập tức vào danh sách báo cáo cục bộ (Hiển thị tức thì 0 giây chờ)
+      try {
+        const nowD = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const todayK = getTodayDateKey();
+        const timeNowStr = `${pad(nowD.getDate())}/${pad(nowD.getMonth() + 1)}/${nowD.getFullYear()} ${pad(nowD.getHours())}:${pad(nowD.getMinutes())}:${pad(nowD.getSeconds())}`;
+        const optOrder = {
+          stt: (rawCustomersList && rawCustomersList.length > 0) ? (rawCustomersList[0].stt || 0) + 1 : 1,
+          khachHang: khachHang,
+          sdt: sdt,
+          nhanVien: nhanVien,
+          chienGia: chienGia,
+          time: timeNowStr,
+          dateKey: todayK,
+          dateDisplay: formatDateDisplayVN(todayK),
+          sanPham: sanPham,
+          giaSanPham: giaSanPham
+        };
+        rawCustomersList.unshift(optOrder);
+        saveReportCache();
+      } catch (e) {}
+
       // TỐI ƯU SIÊU TỐC: Phản hồi ngay lập tức 0 giây chờ đợi
       playBeep('success');
       showToast(`⚡ Đã lưu thành công: ${khachHang}!`, "success");
@@ -3589,6 +3625,11 @@
       document.getElementById('formView').style.display = 'none';
       document.getElementById('reportView').style.display = 'block';
       setStaffDisplayMode(mode);
+      
+      // 1. Nạp tức thì dữ liệu từ bộ nhớ tạm (0.01 giây - Không bao giờ bị màn hình trống 0 đơn)
+      loadReportFromCache();
+
+      // 2. Đồng bộ ngầm bản mới nhất
       loadReportData();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3632,65 +3673,190 @@
     }
 
     let isFullHistoryLoaded = false;
+    const STORAGE_KEY_REPORT_PREFIX = "appscript_cached_report_";
+
+    function getReportCacheKey() {
+      return STORAGE_KEY_REPORT_PREFIX + (currentSheetId || "default");
+    }
+
+    function saveReportCache() {
+      try {
+        if (Array.isArray(rawCustomersList) && rawCustomersList.length > 0) {
+          localStorage.setItem(getReportCacheKey(), JSON.stringify(rawCustomersList.slice(0, 1500)));
+        }
+      } catch (e) {}
+    }
+
+    function loadReportFromCache() {
+      try {
+        const cached = localStorage.getItem(getReportCacheKey());
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawCustomersList = parsed;
+            renderFilteredReport();
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    // Bộ giải mã ngày giờ siêu cấp: nhận diện chính xác Date(...), dd/MM/yyyy, yyyy-MM-dd
+    function extractDateKeyAndDisplay(cell) {
+      if (!cell) return { fullTimeStr: "", dateKey: "", dateDisplay: "" };
+      const pad = (n) => String(n).padStart(2, '0');
+      let raw = "";
+
+      if (typeof cell === "object") {
+        if (cell.f) raw = String(cell.f).trim();
+        else if (cell.v !== undefined && cell.v !== null) raw = String(cell.v).trim();
+      } else {
+        raw = String(cell).trim();
+      }
+
+      if (!raw) return { fullTimeStr: "", dateKey: "", dateDisplay: "" };
+
+      // 1. Google Visualization Date(yyyy, m, d, ...)
+      if (raw.startsWith("Date(")) {
+        const nums = raw.replace("Date(", "").replace(")", "").split(",").map(Number);
+        const d = new Date(nums[0], nums[1], nums[2], nums[3] || 0, nums[4] || 0, nums[5] || 0);
+        const dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const dateDisplay = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        const fullTimeStr = `${dateDisplay} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return { fullTimeStr, dateKey, dateDisplay };
+      }
+
+      let fullTimeStr = raw;
+      let dateKey = "";
+      let dateDisplay = "";
+
+      // 2. dd/MM/yyyy hoặc dd-MM-yyyy (kèm giờ phút nếu có)
+      const dmyMatch = raw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (dmyMatch) {
+        const d = pad(dmyMatch[1]);
+        const m = pad(dmyMatch[2]);
+        const y = dmyMatch[3];
+        dateKey = `${y}-${m}-${d}`;
+        dateDisplay = `${d}/${m}/${y}`;
+        return { fullTimeStr, dateKey, dateDisplay };
+      }
+
+      // 3. yyyy-MM-dd hoặc yyyy/MM/dd
+      const ymdMatch = raw.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (ymdMatch) {
+        const y = ymdMatch[1];
+        const m = pad(ymdMatch[2]);
+        const d = pad(ymdMatch[3]);
+        dateKey = `${y}-${m}-${d}`;
+        dateDisplay = `${d}/${m}/${y}`;
+        return { fullTimeStr, dateKey, dateDisplay };
+      }
+
+      return { fullTimeStr, dateKey, dateDisplay: raw };
+    }
 
     // =========================================================================
     // TẢI & TỔNG HỢP DỮ LIỆU THEO NHÂN VIÊN & THEO NGÀY (SIÊU TỐC)
     // =========================================================================
     async function loadReportData(forceToast = false, loadFull = false) {
       const headerDateEl = document.getElementById('reportHeaderDate');
-      headerDateEl.textContent = "Đang đồng bộ dữ liệu mới...";
+      const hasData = (rawCustomersList && rawCustomersList.length > 0);
+
+      if (!hasData) {
+        const loaded = loadReportFromCache();
+        if (!loaded && headerDateEl) {
+          headerDateEl.textContent = "Đang đồng bộ dữ liệu mới...";
+        }
+      }
+
+      const refreshBtn = document.querySelector('.btn-nav-refresh');
+      if (refreshBtn) refreshBtn.classList.add('refreshing');
+
+      // AbortController với timeout 4 giây chống treo mạng
+      const controller = new AbortController();
+      const timerId = setTimeout(() => controller.abort(), 4000);
 
       try {
-        // TỐI ƯU SIÊU TỐC CHO DỮ LIỆU LƯU TRỮ LÂU:
-        // 1. Chỉ lấy đúng 8 cột A,B,C,D,E,F,G,H (loại bỏ 18 cột rỗng I-Z, giảm 70% dung lượng tải)
-        // 2. Mặc định lấy 3.000 đơn mới nhất (đáp ứng 99% nhu cầu quản lý, tốc độ phản hồi < 0.3s)
-        let tq = "select A,B,C,D,E,F,G,H order by A desc limit 3000";
-        if (loadFull || isFullHistoryLoaded) {
-          tq = "select A,B,C,D,E,F,G,H order by A desc";
-          isFullHistoryLoaded = true;
-        }
+        // GViz siêu tốc: Truy vấn trực tiếp sheet DATA, không tq server-side sort để phản hồi tức thì < 0.2s
+        const queryUrl = getGvizUrl() + "&t=" + Date.now();
+        const res = await fetch(queryUrl, { signal: controller.signal });
+        clearTimeout(timerId);
 
-        const queryUrl = getGvizUrl() + "&tq=" + encodeURIComponent(tq) + "&t=" + Date.now();
-        const res = await fetch(queryUrl);
         const text = await res.text();
-
         const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
         if (jsonMatch && jsonMatch[1]) {
           const parsed = JSON.parse(jsonMatch[1]);
-          const rows = parsed.table ? parsed.table.rows : [];
-          parseGvizToCustomers(rows);
-          renderFilteredReport();
-          if (forceToast) showToast(loadFull ? "Đã tải toàn bộ lịch sử đơn hàng!" : "Đã làm mới dữ liệu thành công!", "success");
-        } else {
-          fallbackLoadViaAppsScript(forceToast, loadFull);
+          if (parsed.status === "ok" && parsed.table && Array.isArray(parsed.table.rows)) {
+            parseGvizToCustomers(parsed.table.rows);
+            renderFilteredReport();
+            if (forceToast) showToast(loadFull ? "Đã tải toàn bộ lịch sử đơn hàng!" : "Đã làm mới dữ liệu thành công!", "success");
+            return;
+          }
         }
-      } catch (e) {
         fallbackLoadViaAppsScript(forceToast, loadFull);
+      } catch (err) {
+        clearTimeout(timerId);
+        fallbackLoadViaAppsScript(forceToast, loadFull);
+      } finally {
+        if (refreshBtn) refreshBtn.classList.remove('refreshing');
       }
     }
 
-    // Dự phòng gọi qua Apps Script
+    // Dự phòng gọi qua Apps Script JSONP
     function fallbackLoadViaAppsScript(forceToast, loadFull = false) {
       const cbName = "report_cb_" + Math.round(100000 * Math.random());
-      window[cbName] = function(res) {
-        delete window[cbName];
-        if (res && res.success && res.list) {
-          rawCustomersList = res.list;
+      
+      const scriptTimeout = setTimeout(() => {
+        if (window[cbName]) {
+          delete window[cbName];
           renderFilteredReport();
-          if (forceToast) showToast("Đã tải dữ liệu qua Apps Script!", "success");
+        }
+      }, 5000);
+
+      window[cbName] = function(res) {
+        clearTimeout(scriptTimeout);
+        delete window[cbName];
+        if (res && res.success && Array.isArray(res.list)) {
+          rawCustomersList = res.list.map(item => {
+            const timeInfo = extractDateKeyAndDisplay({ v: item.time || item.date });
+            return {
+              stt: item.stt,
+              khachHang: item.khachHang,
+              sdt: item.sdt,
+              nhanVien: normalizeStaffName(item.nhanVien),
+              chienGia: Boolean(item.chienGia),
+              time: timeInfo.fullTimeStr || item.time,
+              dateKey: item.dateKey || timeInfo.dateKey,
+              dateDisplay: item.dateDisplay || timeInfo.dateDisplay,
+              sanPham: item.sanPham || "",
+              giaSanPham: item.giaSanPham || ""
+            };
+          });
+          rawCustomersList.sort((a, b) => (b.stt || 0) - (a.stt || 0));
+          saveReportCache();
+          renderFilteredReport();
+          if (forceToast) showToast("Đã cập nhật dữ liệu thành công!", "success");
+        } else {
+          renderFilteredReport();
         }
       };
 
-      const limitParam = loadFull ? "" : "&limit=3000";
+      const limitParam = loadFull ? "" : "&limit=1000";
       const script = document.createElement('script');
       script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport&spreadsheetId=' + encodeURIComponent(currentSheetId) + limitParam + '&callback=' + cbName;
+      script.onerror = () => {
+        clearTimeout(scriptTimeout);
+        delete window[cbName];
+        renderFilteredReport();
+      };
       document.body.appendChild(script);
     }
 
     // Chuyển đổi dữ liệu từ GViz
     function parseGvizToCustomers(rows) {
       const list = [];
-      const pad = (n) => String(n).padStart(2, '0');
+      if (!Array.isArray(rows)) return;
 
       rows.forEach((r, idx) => {
         const c = r.c || [];
@@ -3701,35 +3867,7 @@
         const chienGiaVal = c[4] ? String(c[4].v || "").toLowerCase() : "";
         const isChienGia = (chienGiaVal === "có" || chienGiaVal === "true" || chienGiaVal === "co");
 
-        // Xử lý Time
-        let fullTimeStr = "";
-        let dateKey = ""; // yyyy-mm-dd
-        let dateDisplay = ""; // dd/mm/yyyy
-
-        const timeCell = c[5];
-        if (timeCell) {
-          if (timeCell.f) {
-            fullTimeStr = timeCell.f; // e.g. "22/09/2026 14:36:31"
-            if (fullTimeStr.includes(" ")) {
-              const datePart = fullTimeStr.split(" ")[0];
-              const parts = datePart.split("/");
-              if (parts.length === 3) {
-                dateKey = `${parts[2]}-${pad(parts[1])}-${pad(parts[0])}`;
-                dateDisplay = datePart;
-              }
-            }
-          } else if (typeof timeCell.v === "string" && timeCell.v.startsWith("Date(")) {
-            const nums = timeCell.v.replace("Date(", "").replace(")", "").split(",").map(Number);
-            const d = new Date(nums[0], nums[1], nums[2], nums[3] || 0, nums[4] || 0, nums[5] || 0);
-            fullTimeStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-            dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            dateDisplay = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-          } else if (timeCell.v) {
-            fullTimeStr = String(timeCell.v);
-            dateDisplay = fullTimeStr.split(" ")[0];
-          }
-        }
-
+        const timeInfo = extractDateKeyAndDisplay(c[5]);
         const sanPham = c[6] ? String(c[6].v || "") : "";
         const giaSanPham = c[7] ? String(c[7].v || "") : "";
 
@@ -3740,16 +3878,19 @@
             sdt: sdt,
             nhanVien: nhanVien,
             chienGia: isChienGia,
-            time: fullTimeStr,
-            dateKey: dateKey,
-            dateDisplay: dateDisplay,
+            time: timeInfo.fullTimeStr,
+            dateKey: timeInfo.dateKey,
+            dateDisplay: timeInfo.dateDisplay,
             sanPham: sanPham,
             giaSanPham: giaSanPham
           });
         }
       });
 
+      // Sắp xếp đơn mới nhất lên đầu (STT giảm dần)
+      list.sort((a, b) => (b.stt || 0) - (a.stt || 0));
       rawCustomersList = list;
+      saveReportCache();
     }
 
     function setActivePill(activeId) {

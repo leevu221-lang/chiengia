@@ -869,6 +869,16 @@ function getReportData(dateFilter, limit, customSheetId) {
       // Lọc theo ngày nếu có yêu cầu
       if (dateFilter && dateOnly !== dateFilter) continue;
 
+      let dateKey = "";
+      if (dateOnly && dateOnly.includes("/")) {
+        const parts = dateOnly.split("/");
+        if (parts.length === 3) {
+          dateKey = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      } else if (dateOnly && dateOnly.includes("-")) {
+        dateKey = dateOnly;
+      }
+
       list.push({
         stt: stt,
         khachHang: khachHang,
@@ -878,6 +888,8 @@ function getReportData(dateFilter, limit, customSheetId) {
         chienGiaText: isChienGia ? "Có" : "Không",
         time: fullTimeStr,
         date: dateOnly,
+        dateKey: dateKey,
+        dateDisplay: dateOnly,
         sanPham: sanPham,
         giaSanPham: giaSanPham
       });
