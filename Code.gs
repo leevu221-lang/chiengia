@@ -97,17 +97,19 @@ function doGet(e) {
     return createJsonResponse(result, e.parameter.callback);
   }
 
+  const customSheetId = e && e.parameter ? (e.parameter.spreadsheetId || e.parameter.sheet || "").trim() : "";
+
   // 3. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web (hỗ trợ phân trang / giới hạn để siêu tốc)
   if (e && e.parameter && (e.parameter.action === "getReport" || e.parameter.action === "getData")) {
     const limit = e.parameter.limit ? parseInt(e.parameter.limit) : 3000;
     const date = e.parameter.date || null;
-    const report = getReportData(date, limit);
+    const report = getReportData(date, limit, customSheetId);
     return createJsonResponse(report, e.parameter.callback);
   }
 
   // 4. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động
   if (e && e.parameter && (e.parameter.action === "getStaffList" || e.parameter.action === "getStaff")) {
-    const staffData = getStaffList();
+    const staffData = getStaffList(customSheetId);
     return createJsonResponse(staffData, e.parameter.callback);
   }
 
@@ -164,9 +166,18 @@ function createJsonResponse(data, callback) {
 }
 
 /**
- * Kết nối Spreadsheet an toàn
+ * Kết nối Spreadsheet an toàn (hỗ trợ Sheet ID tùy chỉnh đa trang tính)
  */
-function getSpreadsheet() {
+function getSpreadsheet(customSheetId) {
+  const targetId = (customSheetId || "").toString().trim();
+  if (targetId) {
+    try {
+      return SpreadsheetApp.openById(targetId);
+    } catch (err) {
+      Logger.log("Không thể mở Sheet theo ID tùy chỉnh (" + targetId + "): " + err.toString());
+    }
+  }
+
   try {
     const active = SpreadsheetApp.getActiveSpreadsheet();
     if (active) return active;
@@ -322,7 +333,8 @@ function saveCustomerData(formData) {
   }
 
   try {
-    const ss = getSpreadsheet();
+    const targetSheetId = (formData.spreadsheetId || formData.sheetId || "").toString().trim();
+    const ss = getSpreadsheet(targetSheetId);
     const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
     
     // Đảm bảo hàng tiêu đề chuẩn
@@ -424,7 +436,8 @@ function saveCustomerData(formData) {
         chienGia: isChienGia,
         thoiGian: thoiGianStr,
         sanPham: sanPham,
-        giaSanPham: giaSanPham
+        giaSanPham: giaSanPham,
+        spreadsheetId: targetSheetId || SPREADSHEET_ID
       }
     };
 
@@ -746,9 +759,9 @@ function formatSummaryTotalRow(sheet, rowIdx) {
  * 6. LẤY DỮ LIỆU BÁO CÁO CHO WEB FORM TỔNG HỢP
  * Hỗ trợ lấy giới hạn N dòng gần nhất (mặc định 3.000 dòng) để phản hồi siêu tốc ngay cả khi sheet có hàng trăm nghìn đơn
  */
-function getReportData(dateFilter, limit) {
+function getReportData(dateFilter, limit, customSheetId) {
   try {
-    const ss = getSpreadsheet();
+    const ss = getSpreadsheet(customSheetId);
     const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
     const lastRow = sheetData.getLastRow();
     if (lastRow <= 1) {
@@ -987,9 +1000,9 @@ function showHelp() {
 /**
  * 7. LẤY DANH SÁCH NHÂN VIÊN TỪ SHEET "nhân viên" (Cột B)
  */
-function getStaffList() {
+function getStaffList(customSheetId) {
   try {
-    const ss = getSpreadsheet();
+    const ss = getSpreadsheet(customSheetId);
     const sheet = getOrCreateSheet(ss, "nhân viên");
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) {

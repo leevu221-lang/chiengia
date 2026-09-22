@@ -1342,6 +1342,147 @@
     .btn-modal-copy:hover {
       background: #d1fae5;
     }
+
+    /* Nút Cài Đặt ⚙️ trên Header */
+    .btn-gear-settings {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1.5px solid var(--primary-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      z-index: 10;
+    }
+    .btn-gear-settings:hover {
+      background: #ffffff;
+      transform: rotate(45deg) scale(1.08);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+    }
+
+    /* Modal Cài Đặt Sheet */
+    .settings-modal-box {
+      max-width: 500px;
+      padding-bottom: 18px;
+    }
+    .settings-modal-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .settings-status-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .settings-status-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .settings-status-val {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      word-break: break-all;
+    }
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .settings-open-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #059669;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+    .settings-hint {
+      font-size: 0.76rem;
+      color: #475569;
+      background: #fefce8;
+      border: 1px solid #fef08a;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .settings-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    .settings-share-box {
+      background: #ecfdf5;
+      border: 1.5px dashed #6ee7b7;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 4px;
+    }
+    .settings-share-title {
+      font-size: 0.84rem;
+      color: #065f46;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .settings-share-desc {
+      font-size: 0.74rem;
+      color: #047857;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+    .settings-share-input-group {
+      display: flex;
+      gap: 6px;
+    }
+    .settings-share-input {
+      font-size: 0.8rem;
+      color: #334155;
+      background: #ffffff;
+      height: 40px;
+      padding: 0 10px;
+    }
+    .btn-copy-share {
+      background: #059669;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+    .btn-copy-share:hover {
+      background: #047857;
+    }
   </style>
 </head>
 <body>
@@ -1356,6 +1497,7 @@
     
     <!-- Header -->
     <div class="card-header">
+      <button type="button" class="btn-gear-settings" onclick="openSettingsModal()" title="Cài đặt Google Sheet">⚙️</button>
       <h1>
         <span class="icon-clip">📋</span> NHẬP DỮ LIỆU KHÁCH HÀNG
       </h1>
@@ -1542,9 +1684,14 @@
         <button type="button" class="btn-nav-icon" onclick="openFormView()">
           <span>⬅️</span> <span>Nhập Liệu</span>
         </button>
-        <button type="button" class="btn-nav-refresh" onclick="loadReportData(true)" title="Làm mới dữ liệu">
-          🔄
-        </button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="btn-nav-refresh" onclick="openSettingsModal()" title="Cài đặt Google Sheet">
+            ⚙️
+          </button>
+          <button type="button" class="btn-nav-refresh" onclick="loadReportData(true)" title="Làm mới dữ liệu">
+            🔄
+          </button>
+        </div>
       </div>
       <h1>
         <span class="icon-clip">📊</span> BÁO CÁO TỔNG HỢP
@@ -1686,12 +1833,14 @@
       </button>
 
       <a
+        id="btnOpenSheetOrigin"
         href="https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing"
         target="_blank"
         rel="noopener noreferrer"
         class="btn-sheet"
+        onclick="this.href = getSpreadsheetUrl()"
       >
-        <span>📑</span> <span>Mở Trên Google Sheet Gốc ↗</span>
+        <span>📑</span> <span>Mở Trang Tính Google Sheet ↗</span>
       </a>
 
       <!-- Dòng Footer tác giả -->
@@ -1723,15 +1872,260 @@
     </div>
   </div>
 
+  <!-- Modal Cài Đặt Kết Nối Google Sheet (Đa Trang Tính) -->
+  <div id="settingsModal" class="image-preview-modal-overlay" style="display:none;" onclick="handleSettingsOverlayClick(event)">
+    <div class="image-preview-modal settings-modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 style="display:flex; align-items:center; gap:8px; font-size:1.05rem; color:#064e3b; margin:0;">
+          <span>⚙️</span> Cài Đặt Trang Tính Google Sheet
+        </h3>
+        <button type="button" class="modal-close-btn" onclick="closeSettingsModal()">✕</button>
+      </div>
+      <div class="settings-modal-body">
+        
+        <!-- Trạng thái kết nối hiện tại -->
+        <div class="settings-status-card">
+          <div class="settings-status-label">Trạng thái kết nối hiện tại:</div>
+          <div class="settings-status-val">
+            <span class="status-indicator"></span>
+            <span id="settingsCurrentSheetText">Đang tải...</span>
+          </div>
+          <a href="#" id="settingsCurrentSheetLink" target="_blank" class="settings-open-link">
+            <span>📑 Mở trang tính này trên Google Sheets ↗</span>
+          </a>
+        </div>
+
+        <!-- Ô nhập link Sheet mới -->
+        <div class="form-group" style="margin-top: 4px;">
+          <label class="form-label" for="inputCustomSheetUrl" style="font-size:0.85rem;">
+            🔗 Dán Link hoặc ID Google Sheet của bạn:
+          </label>
+          <div class="input-wrapper">
+            <span class="input-icon">📋</span>
+            <input
+              type="text"
+              id="inputCustomSheetUrl"
+              class="form-input"
+              placeholder="VD: https://docs.google.com/spreadsheets/d/1ABC.../edit"
+            >
+          </div>
+          <div class="settings-hint">
+            💡 <strong>Lưu ý quan trọng:</strong> Trang tính cần được bật quyền chia sẻ: <em>"Bất kỳ ai có đường liên kết đều có thể chỉnh sửa"</em> để ứng dụng có thể lưu đơn hàng.
+          </div>
+        </div>
+
+        <!-- Nút áp dụng & khôi phục -->
+        <div class="settings-btn-row">
+          <button type="button" class="btn-submit" style="margin-top:0; height:42px; font-size:0.88rem; flex:1;" onclick="saveCustomSheetSetting()">
+            <span>💾 Lưu & Áp Dụng</span>
+          </button>
+          <button type="button" class="btn-sheet" style="height:42px; font-size:0.82rem; flex:1;" onclick="resetDefaultSheetSetting()">
+            <span>🔄 Khôi Phục Mặc Định</span>
+          </button>
+        </div>
+
+        <!-- Khu vực link chia sẻ cho nhân viên -->
+        <div class="settings-share-box">
+          <div class="settings-share-title">
+            <span>👥</span> <strong>Link chia sẻ cho toàn bộ nhân viên:</strong>
+          </div>
+          <div class="settings-share-desc">
+            Nhân viên chỉ cần mở link này là vào thẳng Form nhập liệu của bạn, không bao giờ bị hỏi lại link Sheet.
+          </div>
+          <div class="settings-share-input-group">
+            <input type="text" id="shareableEmployeeLink" class="form-input settings-share-input" readonly>
+            <button type="button" class="btn-copy-share" id="btnCopyShareLink" onclick="copyShareableEmployeeLink()">
+              <span>📋</span> <span>Sao chép link</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 
   <script>
     // =========================================================================
-    // CẤU HÌNH LIÊN KẾT CỐ ĐỊNH CHÍNH XÁC 100%
+    // HỆ THỐNG ĐA TRANG TÍNH (MULTI-SHEET) - TỰ ĐỘNG NHẬN DIỆN SHEET ID
     // =========================================================================
+    const DEFAULT_SPREADSHEET_ID = "1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxE2Rm3_eyImKCAX5FSJ0BajF7AlaFaxqhlVj4nsgwkXnjtvlMgDiQDCYZ-gt9IJlLB/exec";
-    const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/edit?usp=sharing";
-    const GVIZ_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/gviz/tq?tqx=out:json&sheet=DATA";
-    const GVIZ_NV_URL = "https://docs.google.com/spreadsheets/d/1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0/gviz/tq?tqx=out:json&sheet=nh%C3%A2n%20vi%C3%AAn";
+    const STORAGE_KEY_CUSTOM_SHEET = "appscript_custom_sheet_id";
+
+    // Trích xuất ID Google Sheet từ URL đầy đủ hoặc chuỗi ID
+    function extractSpreadsheetId(input) {
+      if (!input) return null;
+      input = input.trim();
+      const match = input.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+      if (/^[a-zA-Z0-9_-]{20,}$/.test(input)) {
+        return input;
+      }
+      return null;
+    }
+
+    // Khởi tạo Sheet ID hiện tại (Ưu tiên URL param ?sheet=... -> LocalStorage -> Mặc định)
+    let currentSheetId = (function() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramSheet = urlParams.get('sheet');
+        if (paramSheet) {
+          const parsed = extractSpreadsheetId(paramSheet);
+          if (parsed) {
+            localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsed);
+            return parsed;
+          }
+        }
+        const cached = localStorage.getItem(STORAGE_KEY_CUSTOM_SHEET);
+        if (cached && extractSpreadsheetId(cached)) {
+          return cached;
+        }
+      } catch (e) {}
+      return DEFAULT_SPREADSHEET_ID;
+    })();
+
+    function getSpreadsheetUrl() {
+      return "https://docs.google.com/spreadsheets/d/" + currentSheetId + "/edit?usp=sharing";
+    }
+
+    function getGvizUrl() {
+      return "https://docs.google.com/spreadsheets/d/" + currentSheetId + "/gviz/tq?tqx=out:json&sheet=DATA";
+    }
+
+    function getGvizStaffUrl() {
+      return "https://docs.google.com/spreadsheets/d/" + currentSheetId + "/gviz/tq?tqx=out:json&sheet=nh%C3%A2n%20vi%C3%AAn";
+    }
+
+    function getBaseShareUrl() {
+      const loc = window.location;
+      const base = loc.origin + loc.pathname;
+      return base + "?sheet=" + currentSheetId;
+    }
+
+    // =========================================================================
+    // QUẢN LÝ CÀI ĐẶT MODAL TRANG TÍNH (SETTINGS)
+    // =========================================================================
+    function openSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      if (!modal) return;
+      
+      const isDefault = (currentSheetId === DEFAULT_SPREADSHEET_ID);
+      const shortId = currentSheetId.length > 18 ? currentSheetId.substring(0, 8) + '...' + currentSheetId.substring(currentSheetId.length - 6) : currentSheetId;
+      
+      const statusEl = document.getElementById('settingsCurrentSheetText');
+      if (statusEl) {
+        statusEl.textContent = isDefault 
+          ? `Trang tính mặc định (${shortId})` 
+          : `Trang tính tùy chỉnh (${shortId})`;
+      }
+        
+      const linkEl = document.getElementById('settingsCurrentSheetLink');
+      if (linkEl) linkEl.href = getSpreadsheetUrl();
+      
+      const inputEl = document.getElementById('inputCustomSheetUrl');
+      if (inputEl) inputEl.value = isDefault ? "" : getSpreadsheetUrl();
+      
+      const shareEl = document.getElementById('shareableEmployeeLink');
+      if (shareEl) shareEl.value = getBaseShareUrl();
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handleSettingsOverlayClick(event) {
+      if (event.target === document.getElementById('settingsModal')) {
+        closeSettingsModal();
+      }
+    }
+
+    function saveCustomSheetSetting() {
+      const input = document.getElementById('inputCustomSheetUrl').value.trim();
+      if (!input) {
+        showToast("Vui lòng dán link hoặc ID Google Sheet!", "error");
+        return;
+      }
+      const parsedId = extractSpreadsheetId(input);
+      if (!parsedId) {
+        showToast("Link Google Sheet không hợp lệ! Vui lòng kiểm tra lại.", "error");
+        return;
+      }
+      
+      currentSheetId = parsedId;
+      try {
+        localStorage.setItem(STORAGE_KEY_CUSTOM_SHEET, parsedId);
+        // Xóa cache danh sách nhân viên cũ để tải mới từ sheet này
+        localStorage.removeItem(STORAGE_KEY_STAFF_LIST);
+      } catch (e) {}
+      
+      const newUrl = window.location.origin + window.location.pathname + "?sheet=" + parsedId;
+      try {
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+      } catch (e) {}
+      
+      const shareEl = document.getElementById('shareableEmployeeLink');
+      if (shareEl) shareEl.value = newUrl;
+      
+      const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+      if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+      
+      showToast("✅ Đã kết nối Google Sheet thành công!", "success");
+      closeSettingsModal();
+      
+      // Tải lại dữ liệu nhân viên & báo cáo theo sheet mới
+      loadMasterStaffList();
+      if (document.getElementById('reportView').style.display !== 'none') {
+        loadReportData(true);
+      }
+    }
+
+    function resetDefaultSheetSetting() {
+      currentSheetId = DEFAULT_SPREADSHEET_ID;
+      try {
+        localStorage.removeItem(STORAGE_KEY_CUSTOM_SHEET);
+        localStorage.removeItem(STORAGE_KEY_STAFF_LIST);
+      } catch (e) {}
+      
+      const cleanUrl = window.location.origin + window.location.pathname;
+      try {
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+      } catch (e) {}
+      
+      const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+      if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+      
+      showToast("🔄 Đã khôi phục về Google Sheet mặc định!", "info");
+      closeSettingsModal();
+      
+      loadMasterStaffList();
+      if (document.getElementById('reportView').style.display !== 'none') {
+        loadReportData(true);
+      }
+    }
+
+    async function copyShareableEmployeeLink() {
+      const linkInput = document.getElementById('shareableEmployeeLink');
+      if (!linkInput || !linkInput.value) return;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(linkInput.value);
+        } else {
+          linkInput.select();
+          document.execCommand('copy');
+        }
+        showToast("📋 Đã copy link gửi cho nhân viên!", "success");
+      } catch (err) {
+        linkInput.select();
+        document.execCommand('copy');
+        showToast("📋 Đã copy link gửi cho nhân viên!", "success");
+      }
+    }
 
     const STORAGE_KEY_NV = "appscript_cached_nhanvien";
     const STORAGE_KEY_STAFF_LIST = "appscript_master_staff_list";
@@ -1784,6 +2178,18 @@
       if (filterInput) filterInput.value = selectedFilterDate;
 
       setupKeyboardShortcuts();
+
+      // Cập nhật link mở Google Sheet
+      const openSheetBtn = document.getElementById('btnOpenSheetOrigin');
+      if (openSheetBtn) openSheetBtn.href = getSpreadsheetUrl();
+
+      // Thông báo nhẹ nếu đang dùng Sheet riêng tùy chỉnh
+      if (currentSheetId !== DEFAULT_SPREADSHEET_ID) {
+        const shortId = currentSheetId.length > 18 ? currentSheetId.substring(0, 8) + '...' + currentSheetId.substring(currentSheetId.length - 6) : currentSheetId;
+        setTimeout(() => {
+          showToast(`🌿 Đang kết nối Sheet riêng: ${shortId}`, "info");
+        }, 600);
+      }
 
       // Tải danh sách nhân viên từ sheet "nhân viên"
       loadMasterStaffList();
@@ -1912,7 +2318,7 @@
 
       // Tải trực tiếp từ Google Visualization API
       try {
-        const res = await fetch(GVIZ_NV_URL + "&t=" + new Date().getTime());
+        const res = await fetch(getGvizStaffUrl() + "&t=" + new Date().getTime());
         const text = await res.text();
         const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
         if (jsonMatch && jsonMatch[1]) {
@@ -1942,7 +2348,7 @@
             masterStaffList = res.list;
             localStorage.setItem(STORAGE_KEY_STAFF_LIST, JSON.stringify(res.list));
           }
-        }).getStaffList();
+        }).getStaffList(currentSheetId);
         return;
       }
 
@@ -1957,7 +2363,7 @@
           }
         };
         const s = document.createElement('script');
-        s.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getStaffList&callback=' + cbName;
+        s.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getStaffList&spreadsheetId=' + encodeURIComponent(currentSheetId) + '&callback=' + cbName;
         document.body.appendChild(s);
       } catch (err) {}
     }
@@ -2281,6 +2687,7 @@
 
       const payload = {
         tx_id: tx_id,
+        spreadsheetId: currentSheetId,
         khachHang: khachHang,
         sdt: sdt,
         sanPham: sanPham,
@@ -2819,7 +3226,7 @@
           isFullHistoryLoaded = true;
         }
 
-        const queryUrl = GVIZ_URL + "&tq=" + encodeURIComponent(tq) + "&t=" + Date.now();
+        const queryUrl = getGvizUrl() + "&tq=" + encodeURIComponent(tq) + "&t=" + Date.now();
         const res = await fetch(queryUrl);
         const text = await res.text();
 
@@ -2852,7 +3259,7 @@
 
       const limitParam = loadFull ? "" : "&limit=3000";
       const script = document.createElement('script');
-      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport' + limitParam + '&callback=' + cbName;
+      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport&spreadsheetId=' + encodeURIComponent(currentSheetId) + limitParam + '&callback=' + cbName;
       document.body.appendChild(script);
     }
 
