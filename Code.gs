@@ -87,8 +87,8 @@ function doGet(e) {
     }, e.parameter.callback);
   }
 
-  // 2. Nhận lưu dữ liệu gửi qua GET (Dự phòng cho GitHub Pages)
-  if (e && e.parameter && (e.parameter.khachHang || e.parameter.sdt)) {
+  // 2. Nhận lưu dữ liệu gửi qua GET (Chỉ xử lý khi có action=save rõ ràng, ngăn chặn hoàn toàn redirect từ POST gây trùng lặp)
+  if (e && e.parameter && e.parameter.action === "save") {
     let data = e.parameter;
     if (typeof data.chienGia === "string") {
       data.chienGia = (data.chienGia.toLowerCase() === "true" || data.chienGia === "1");
@@ -320,13 +320,27 @@ function saveCustomerData(formData) {
     const isChienGia = Boolean(formData.chienGia);
     const chienGiaText = isChienGia ? "Có" : "Không";
 
-    // Khử trùng lặp trong 4 giây (phòng trường hợp gửi kép POST và GET)
+    // KHỬ TRÙNG LẶP ĐA TẦNG TUYỆT ĐỐI (Chống click nhiều lần, chống redirect kép, chống retry mạng)
     const cache = CacheService.getScriptCache();
-    const cacheKey = "save_" + encodeURIComponent(khachHang + "_" + sdtRaw);
-    if (cache.get(cacheKey)) {
-      return { success: true, message: `Đơn khách ${khachHang} đã được lưu thành công!` };
+    
+    // Tầng 1: Khử theo mã giao dịch duy nhất tx_id
+    const txId = (formData.tx_id || "").toString().trim();
+    if (txId) {
+      const txKey = "tx_" + encodeURIComponent(txId);
+      if (cache.get(txKey)) {
+        Logger.log("Bỏ qua đơn trùng lặp theo tx_id: " + txId);
+        return { success: true, message: `Đơn khách ${khachHang} đã được lưu thành công (bỏ qua trùng lặp)!`, duplicate: true };
+      }
+      cache.put(txKey, "saved", 60); // Khóa mã giao dịch trong 60 giây
     }
-    cache.put(cacheKey, "ok", 5);
+
+    // Tầng 2: Khử trùng nội dung giống hệt nhau (Tên + SĐT + Sản phẩm) trong 10 giây
+    const contentKey = "content_" + encodeURIComponent(khachHang.toLowerCase() + "_" + sdtRaw + "_" + sanPham.toLowerCase());
+    if (cache.get(contentKey)) {
+      Logger.log("Bỏ qua đơn trùng lặp nội dung giống hệt nhau trong 10s: " + contentKey);
+      return { success: true, message: `Đơn khách ${khachHang} đã được lưu thành công (bỏ qua trùng lặp)!`, duplicate: true };
+    }
+    cache.put(contentKey, "saved", 10); // Khóa nội dung trong 10 giây
 
     // Thời gian chuẩn GMT+7
     const now = new Date();

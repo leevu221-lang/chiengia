@@ -2132,10 +2132,19 @@
       }, 4000);
     }
 
-    // 7. XỬ LÝ LƯU DỮ LIỆU SIÊU TỐC (OPTIMISTIC INSTANT SAVE - 0 GIÂY CHỜ ĐỢI)
+    let isSavingInProgress = false;
+    let lastSubmitTimestamp = 0;
+
+    // 7. XỬ LÝ LƯU DỮ LIỆU SIÊU TỐC & CHỐNG TRÙNG LẶP TUYỆT ĐỐI
     async function handleFormSubmit(event) {
-      event.preventDefault();
+      if (event) event.preventDefault();
       closeStaffDropdown();
+
+      const now = Date.now();
+      // Chống click kép / nhấn phím Enter liên tục (bỏ qua nếu bấm trong 1.5 giây)
+      if (isSavingInProgress || (now - lastSubmitTimestamp < 1500)) {
+        return;
+      }
 
       const khachHangEl = document.getElementById('khachHang');
       const sdtEl = document.getElementById('sdt');
@@ -2167,7 +2176,15 @@
         localStorage.setItem(STORAGE_KEY_NV, nhanVien);
       }
 
+      // Khóa ngay lập tức trạng thái gửi
+      isSavingInProgress = true;
+      lastSubmitTimestamp = now;
+
+      // Tạo mã giao dịch tx_id duy nhất cho lượt lưu này
+      const tx_id = "tx_" + now + "_" + Math.random().toString(36).substr(2, 7);
+
       const payload = {
+        tx_id: tx_id,
         khachHang: khachHang,
         sdt: sdt,
         sanPham: sanPham,
@@ -2181,7 +2198,7 @@
       resetFormAfterSave();
       showSaveSuccessPulse();
 
-      // Gửi ngầm tới máy chủ Google Apps Script (không làm đơ giao diện người dùng)
+      // Gửi ngầm DUY NHẤT 1 LẦN tới Google Apps Script
       (async () => {
         try {
           // 1. Nếu mở trong Google Sheet (Sidebar / Dialog)
@@ -2196,9 +2213,8 @@
           }
 
           // 2. Nếu mở trên GitHub Pages (https://leevu221-lang.github.io/chiengia/)
+          // CHỈ GỬI 1 YÊU CẦU POST (Tuyệt đối không gửi kèm GET dự phòng để tránh nhân bản dòng)
           const formData = new URLSearchParams(payload).toString();
-
-          // Gửi POST
           await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -2208,14 +2224,13 @@
             },
             body: formData
           });
-
-          // Gửi GET dự phòng
-          const backupUrl = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + formData;
-          const pingImg = new Image();
-          pingImg.src = backupUrl;
         } catch (error) {
           playBeep('error');
           showToast("Lỗi khi đồng bộ dữ liệu: " + error.message, "error");
+        } finally {
+          setTimeout(() => {
+            isSavingInProgress = false;
+          }, 1500);
         }
       })();
     }
@@ -2223,12 +2238,14 @@
     function showSaveSuccessPulse() {
       const btn = document.getElementById('btnSubmit');
       if (!btn) return;
+      btn.disabled = true;
       const originalHtml = btn.innerHTML;
       btn.innerHTML = `<span>✓</span> <span>Đã Lưu Xong!</span>`;
       btn.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
       setTimeout(() => {
         btn.innerHTML = originalHtml;
         btn.style.background = "";
+        btn.disabled = false;
       }, 1200);
     }
 
