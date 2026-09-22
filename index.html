@@ -2511,11 +2511,11 @@
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     }
 
-    function formatDateDisplayVN(yyyy_mm_dd) {
-      if (!yyyy_mm_dd) return "";
-      const p = yyy_mm_dd.split("-");
+    function formatDateDisplayVN(strDate) {
+      if (!strDate) return "";
+      const p = String(strDate).trim().split("-");
       if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
-      return yyy_mm_dd;
+      return String(strDate).trim();
     }
 
     // Chuẩn hóa mọi định dạng ngày thành yyyy-MM-dd
@@ -3822,95 +3822,92 @@
     // =========================================================================
     // TẢI & TỔNG HỢP DỮ LIỆU THEO NHÂN VIÊN & THEO NGÀY (SIÊU TỐC)
     // =========================================================================
-    async function loadReportData(forceToast = false, loadFull = false) {
-      const headerDateEl = document.getElementById('reportHeaderDate');
-      const hasData = (rawCustomersList && rawCustomersList.length > 0);
+    let isReportLoading = false;
 
-      if (!hasData && headerDateEl) {
-        headerDateEl.textContent = "Đang đồng bộ dữ liệu mới...";
-      }
+    async function loadReportData(forceToast = false, loadFull = false) {
+      if (isReportLoading) return;
+      isReportLoading = true;
 
       const refreshBtn = document.querySelector('.btn-nav-refresh');
       if (refreshBtn) refreshBtn.classList.add('refreshing');
 
-      // AbortController với timeout 8 giây chống treo mạng
-      const controller = new AbortController();
-      const timerId = setTimeout(() => controller.abort(), 8000);
+      // Cập nhật giao diện báo cáo ngay lập tức
+      renderFilteredReport();
 
+      // 1. Thử tải qua Google Visualization API (Siêu tốc < 0.3s)
       try {
-        // TỐI ƯU GVIZ SIÊU TỐC: Chỉ lấy đúng 8 cột A->H, tối đa 3000 dòng để phản hồi < 0.2s
         const tq = (loadFull || isFullHistoryLoaded) ? "select A,B,C,D,E,F,G,H" : "select A,B,C,D,E,F,G,H limit 3000";
         if (loadFull) isFullHistoryLoaded = true;
 
         const queryUrl = getGvizUrl() + "&tq=" + encodeURIComponent(tq) + "&t=" + Date.now();
+        
+        // Timeout 3.5 giây cho GViz
+        const controller = new AbortController();
+        const timerId = setTimeout(() => controller.abort(), 3500);
+
         const res = await fetch(queryUrl, { signal: controller.signal });
         clearTimeout(timerId);
 
-        const text = await res.text();
-        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
-        if (jsonMatch && jsonMatch[1]) {
-          const parsed = JSON.parse(jsonMatch[1]);
-          if (parsed.status === "ok" && parsed.table && Array.isArray(parsed.table.rows)) {
-            parseGvizToCustomers(parsed.table.rows);
-            renderFilteredReport();
-            if (forceToast) showToast(loadFull ? "Đã tải toàn bộ lịch sử đơn hàng!" : "Đã làm mới dữ liệu thành công!", "success");
-            return;
-          }
-        }
-
-        // Dự phòng: Thử truy vấn trực tiếp không tq nếu câu select bị lỗi cú pháp trên sheet
-        try {
-          const directUrl = getGvizUrl() + "&t=" + Date.now();
-          const res2 = await fetch(directUrl);
-          const text2 = await res2.text();
-          const jsonMatch2 = text2.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
-          if (jsonMatch2 && jsonMatch2[1]) {
-            const parsed2 = JSON.parse(jsonMatch2[1]);
-            if (parsed2.status === "ok" && parsed2.table && Array.isArray(parsed2.table.rows)) {
-              parseGvizToCustomers(parsed2.table.rows);
+        if (res.ok) {
+          const text = await res.text();
+          const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+          if (jsonMatch && jsonMatch[1]) {
+            const parsed = JSON.parse(jsonMatch[1]);
+            if (parsed.status === "ok" && parsed.table && Array.isArray(parsed.table.rows)) {
+              parseGvizToCustomers(parsed.table.rows);
+              isReportLoading = false;
+              if (refreshBtn) refreshBtn.classList.remove('refreshing');
               renderFilteredReport();
-              if (forceToast) showToast("Đã cập nhật dữ liệu thành công!", "success");
+              if (forceToast) showToast(loadFull ? "Đã tải toàn bộ lịch sử đơn hàng!" : "Đã làm mới dữ liệu thành công!", "success");
               return;
             }
           }
-        } catch (e2) {}
-
-        fallbackLoadViaAppsScript(forceToast, loadFull);
+        }
       } catch (err) {
-        clearTimeout(timerId);
-        fallbackLoadViaAppsScript(forceToast, loadFull);
-      } finally {
-        if (refreshBtn) refreshBtn.classList.remove('refreshing');
-        renderFilteredReport();
+        // GViz lỗi hoặc timeout -> chuyển qua fallback Apps Script
       }
+
+      // 2. Dự phòng: Tải qua Apps Script JSONP
+      fallbackLoadViaAppsScript(forceToast, loadFull);
     }
 
     // Dự phòng gọi qua Apps Script JSONP
     function fallbackLoadViaAppsScript(forceToast, loadFull = false) {
+      const refreshBtn = document.querySelector('.btn-nav-refresh');
       const cbName = "report_cb_" + Math.round(100000 * Math.random());
-      
+
+      let isFinished = false;
       const scriptTimeout = setTimeout(() => {
-        if (window[cbName]) {
-          delete window[cbName];
+        if (!isFinished) {
+          isFinished = true;
+          isReportLoading = false;
+          if (refreshBtn) refreshBtn.classList.remove('refreshing');
           renderFilteredReport();
+          if (forceToast) showToast("Kết nối mạng chậm, đang hiển thị dữ liệu đã lưu.", "warning");
         }
-      }, 5000);
+      }, 12000);
 
       window[cbName] = function(res) {
         clearTimeout(scriptTimeout);
-        delete window[cbName];
+        if (isFinished) return;
+        isFinished = true;
+        isReportLoading = false;
+        if (refreshBtn) refreshBtn.classList.remove('refreshing');
+
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+
         if (res && res.success && Array.isArray(res.list)) {
           rawCustomersList = res.list.map(item => {
             const timeInfo = extractDateKeyAndDisplay({ v: item.time || item.date });
             return {
               stt: item.stt,
-              khachHang: item.khachHang,
-              sdt: item.sdt,
+              khachHang: item.khachHang || "",
+              sdt: item.sdt || "",
               nhanVien: normalizeStaffName(item.nhanVien),
               chienGia: Boolean(item.chienGia),
-              time: timeInfo.fullTimeStr || item.time,
-              dateKey: item.dateKey || timeInfo.dateKey,
-              dateDisplay: item.dateDisplay || timeInfo.dateDisplay,
+              time: timeInfo.fullTimeStr || item.time || "",
+              dateKey: item.dateKey || timeInfo.dateKey || "",
+              dateDisplay: item.dateDisplay || timeInfo.dateDisplay || "",
               sanPham: item.sanPham || "",
               giaSanPham: item.giaSanPham || ""
             };
@@ -3918,20 +3915,29 @@
           rawCustomersList.sort((a, b) => (b.stt || 0) - (a.stt || 0));
           saveReportCache();
           renderFilteredReport();
-          if (forceToast) showToast("Đã cập nhật dữ liệu thành công!", "success");
+          if (forceToast) showToast("Đã đồng bộ dữ liệu thành công!", "success");
         } else {
           renderFilteredReport();
+          if (forceToast) showToast(res && res.message ? res.message : "Chưa có dữ liệu đơn hàng!", "warning");
         }
       };
 
-      const limitParam = loadFull ? "" : "&limit=1000";
+      const limitParam = loadFull ? "" : "&limit=3000";
       const script = document.createElement('script');
       script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 'action=getReport&spreadsheetId=' + encodeURIComponent(currentSheetId) + limitParam + '&callback=' + cbName;
+      
       script.onerror = () => {
         clearTimeout(scriptTimeout);
-        delete window[cbName];
-        renderFilteredReport();
+        if (!isFinished) {
+          isFinished = true;
+          isReportLoading = false;
+          if (refreshBtn) refreshBtn.classList.remove('refreshing');
+          try { delete window[cbName]; } catch (e) {}
+          renderFilteredReport();
+          if (forceToast) showToast("Không thể kết nối máy chủ Google Sheet! Vui lòng thử lại.", "error");
+        }
       };
+
       document.body.appendChild(script);
     }
 
@@ -4107,6 +4113,25 @@
       }
     }
 
+    function getReportDateTitle() {
+      const from = selectedFilterDateFrom;
+      const to = selectedFilterDateTo;
+      const todayKey = getTodayDateKey();
+
+      if (currentFilterMode === "all" || (!from && !to)) {
+        return `Toàn bộ thời gian`;
+      }
+      if (from && to) {
+        if (from === to) {
+          if (from === todayKey) return `Hôm nay: ${formatDateDisplayVN(from)}`;
+          if (from === getYesterdayDateKey()) return `Hôm qua: ${formatDateDisplayVN(from)}`;
+          return `Ngày: ${formatDateDisplayVN(from)}`;
+        }
+        return `Từ ${formatDateDisplayVN(from)} đến ${formatDateDisplayVN(to)}`;
+      }
+      return `Ngày: ${formatDateDisplayVN(from || to)}`;
+    }
+
     // Hiển thị báo cáo đã lọc (chuẩn xác 100%, chống treo, hỗ trợ mọi định dạng ngày)
     function renderFilteredReport() {
       try {
@@ -4115,36 +4140,27 @@
 
         if (currentFilterMode === "all" || (!selectedFilterDateFrom && !selectedFilterDateTo)) {
           filteredList = rawCustomersList || [];
-          if (headerDateEl) {
-            if (!isFullHistoryLoaded && rawCustomersList && rawCustomersList.length >= 3000) {
-              headerDateEl.innerHTML = `3.000 đơn gần nhất (<a href="javascript:void(0)" onclick="loadReportData(true, true)" style="color:#059669; text-decoration:underline; font-weight:700;">Tải tất cả lịch sử cũ ⚡</a>)`;
-            } else {
-              headerDateEl.textContent = `Toàn bộ thời gian (${filteredList.length} đơn)`;
-            }
-          }
         } else {
           const from = selectedFilterDateFrom;
           const to = selectedFilterDateTo;
 
           if (from && to) {
             filteredList = (rawCustomersList || []).filter(item => isItemInDateRange(item, from, to));
-            if (headerDateEl) {
-              if (from === to) {
-                if (from === getTodayDateKey()) {
-                  headerDateEl.textContent = `Hôm nay: ${formatDateDisplayVN(from)} (${filteredList.length} đơn)`;
-                } else if (from === getYesterdayDateKey()) {
-                  headerDateEl.textContent = `Hôm qua: ${formatDateDisplayVN(from)} (${filteredList.length} đơn)`;
-                } else {
-                  headerDateEl.textContent = `Ngày: ${formatDateDisplayVN(from)} (${filteredList.length} đơn)`;
-                }
-              } else {
-                headerDateEl.textContent = `Từ ${formatDateDisplayVN(from)} đến ${formatDateDisplayVN(to)} (${filteredList.length} đơn)`;
-              }
-            }
           } else {
             filteredList = rawCustomersList || [];
-            if (headerDateEl) {
-              headerDateEl.textContent = `Toàn bộ thời gian (${filteredList.length} đơn)`;
+          }
+        }
+
+        const dateTitle = getReportDateTitle();
+        if (headerDateEl) {
+          if (isReportLoading && (!rawCustomersList || rawCustomersList.length === 0)) {
+            headerDateEl.innerHTML = `<span>⏳ ${dateTitle}</span> <span style="font-size:0.75rem; color:#047857; font-weight:600; opacity:0.85;">(Đang đồng bộ...)</span>`;
+          } else {
+            const countText = `(${filteredList.length} đơn)`;
+            if (!isFullHistoryLoaded && rawCustomersList && rawCustomersList.length >= 3000 && currentFilterMode === "all") {
+              headerDateEl.innerHTML = `3.000 đơn gần nhất (<a href="javascript:void(0)" onclick="loadReportData(true, true)" style="color:#059669; text-decoration:underline; font-weight:700;">Tải tất cả lịch sử cũ ⚡</a>)`;
+            } else {
+              headerDateEl.textContent = `${dateTitle} ${countText}`;
             }
           }
         }
