@@ -1,35 +1,36 @@
 /**
  * =========================================================================================
  * GOOGLE APPS SCRIPT: HỆ THỐNG NHẬP LIỆU KHÁCH HÀNG & BÁO CÁO TỔNG HỢP CHIẾN GIÁ
- * Giao diện: Web App / Sidebar / Dialog (Tone Xanh Lá Pastel)
- * Trang tính liên kết: Google Sheet (Sheet DATA & Sheet TỔNG HỢP)
+ * Khớp 100% cột trong trang tính: STT | KHÁCH HÀNG | SĐT | NHÂN VIÊN | Chiến Giá | Time | Sản Phẩm
+ * Hỗ trợ nhận dữ liệu từ GitHub Pages (doPost & doGet) + Khử trùng lặp CacheService
  * =========================================================================================
  */
 
 // Cấu hình ID và Link Trang Tính Google Sheet
 const SPREADSHEET_ID = "1TBYhGWoe7cVwCx0oBV3d7uAPeFMza6KgsaW7NM9DTa0";
-const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/edit";
+const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/edit?usp=sharing";
 
-// Tên trang tính mặc định (hệ thống tự động tìm không phân biệt chữ hoa/thường)
+// Tên trang tính mặc định (tự động tìm không phân biệt chữ hoa/thường)
 const SHEET_DATA_NAME = "DATA";
 const SHEET_TONG_HOP_NAME = "TỔNG HỢP";
 
-// Bảng mã màu Tone Xanh Lá Pastel chuẩn thiết kế
+// Bảng mã màu Tone Pastel
 const THEME = {
-  HEADER_BG: "#d1fae5",       // Xanh ngọc pastel nhạt
-  HEADER_TEXT: "#065f46",     // Xanh đậm tương phản cao
-  ACCENT_BG: "#ecfdf5",       // Nền highlight xanh siêu nhẹ
-  BORDER_COLOR: "#cbd5e1",    // Viền xám nhạt tinh tế
-  TOTAL_BG: "#a7f3d0",        // Hàng tổng cộng nổi bật pastel
-  TOTAL_TEXT: "#064e3b",      // Chữ hàng tổng cộng
-  YES_BADGE_BG: "#dcfce7",    // Nhãn "Có" chiến giá
+  HEADER_BG: "#f59e0b",       // Màu vàng cam đồng bộ với hàng tiêu đề của bạn
+  HEADER_TEXT: "#000000",
+  SUMMARY_HEADER_BG: "#d1fae5", // Xanh pastel cho sheet Tổng Hợp
+  SUMMARY_HEADER_TEXT: "#065f46",
+  BORDER_COLOR: "#cbd5e1",
+  TOTAL_BG: "#a7f3d0",
+  TOTAL_TEXT: "#064e3b",
+  YES_BADGE_BG: "#dcfce7",
   YES_BADGE_TEXT: "#15803d",
-  NO_BADGE_BG: "#f1f5f9",     // Nhãn "Không" chiến giá
+  NO_BADGE_BG: "#f1f5f9",
   NO_BADGE_TEXT: "#64748b"
 };
 
 /**
- * 1. Hàm khởi tạo menu trên Google Sheets khi người dùng mở trang tính
+ * 1. Khởi tạo menu trên Google Sheets
  */
 function onOpen() {
   try {
@@ -39,18 +40,15 @@ function onOpen() {
       .addItem("▶ Mở Form Nhập Liệu (Cửa sổ giữa - Dialog)", "showModalDialog")
       .addSeparator()
       .addItem("🔄 Cập Nhật Lại Bảng Tổng Hợp", "manualUpdateSummary")
-      .addItem("🎨 Định Dạng Lại Bảng Tính (Pastel Style)", "formatSheetsManual")
+      .addItem("🎨 Định Dạng Lại Tiêu Đề Cột", "formatSheetsManual")
       .addSeparator()
       .addItem("ℹ Hướng Dẫn & Thông Tin", "showHelp")
       .addToUi();
   } catch (e) {
-    Logger.log("Chế độ chạy không hỗ trợ UI menu (Web App mode): " + e.toString());
+    Logger.log("Chế độ chạy không hỗ trợ UI: " + e.toString());
   }
 }
 
-/**
- * 2. Mở giao diện dưới dạng Sidebar bên phải màn hình Google Sheet
- */
 function showSidebar() {
   const html = HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Nhập Liệu Khách Hàng")
@@ -58,9 +56,6 @@ function showSidebar() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-/**
- * 3. Mở giao diện dưới dạng Hộp thoại (Modal Dialog) ở giữa màn hình
- */
 function showModalDialog() {
   const html = HtmlService.createHtmlOutputFromFile("index")
     .setWidth(480)
@@ -69,28 +64,26 @@ function showModalDialog() {
 }
 
 /**
- * 4. Hàm phục vụ Web App độc lập hoặc API nhận dữ liệu từ GitHub Pages
+ * 2. Xử lý yêu cầu GET (Mở Web App hoặc Nhận lưu dữ liệu dự phòng từ GitHub Pages)
  */
 function doGet(e) {
-  // 1. Phản hồi API kiểm tra kết nối từ GitHub Pages
-  if (e && e.parameter) {
-    if (e.parameter.action === "ping") {
-      return createJsonResponse({
-        success: true,
-        message: "Kết nối thành công tới Google Apps Script!",
-        spreadsheetUrl: SPREADSHEET_URL
-      }, e.parameter.callback);
-    }
+  // 1. Kiểm tra kết nối Ping
+  if (e && e.parameter && e.parameter.action === "ping") {
+    return createJsonResponse({
+      success: true,
+      message: "Kết nối thành công tới Google Apps Script!",
+      spreadsheetUrl: SPREADSHEET_URL
+    }, e.parameter.callback);
+  }
 
-    // 2. Nhận lưu dữ liệu qua GET (hỗ trợ JSONP chống chặn CORS trên GitHub Pages)
-    if (e.parameter.action === "save" || (e.parameter.khachHang && e.parameter.sdt)) {
-      let data = e.parameter;
-      if (typeof data.chienGia === "string") {
-        data.chienGia = (data.chienGia.toLowerCase() === "true" || data.chienGia === "1");
-      }
-      const result = saveCustomerData(data);
-      return createJsonResponse(result, e.parameter.callback);
+  // 2. Nhận lưu dữ liệu gửi qua GET (Dự phòng cho GitHub Pages)
+  if (e && e.parameter && (e.parameter.khachHang || e.parameter.sdt)) {
+    let data = e.parameter;
+    if (typeof data.chienGia === "string") {
+      data.chienGia = (data.chienGia.toLowerCase() === "true" || data.chienGia === "1");
     }
+    const result = saveCustomerData(data);
+    return createJsonResponse(result, e.parameter.callback);
   }
 
   // 3. Mặc định mở giao diện Web App
@@ -101,14 +94,14 @@ function doGet(e) {
 }
 
 /**
- * Xử lý yêu cầu POST gửi từ GitHub Pages
+ * 3. QUAN TRỌNG NHẤT: Xử lý yêu cầu POST gửi từ GitHub Pages (mode: no-cors hoặc application/x-www-form-urlencoded)
  */
 function doPost(e) {
   try {
     let data = {};
-    if (e.parameter && (e.parameter.khachHang || e.parameter.sdt)) {
+    if (e && e.parameter && (e.parameter.khachHang || e.parameter.sdt)) {
       data = e.parameter;
-    } else if (e.postData && e.postData.contents) {
+    } else if (e && e.postData && e.postData.contents) {
       try {
         data = JSON.parse(e.postData.contents);
       } catch (parseErr) {
@@ -121,8 +114,9 @@ function doPost(e) {
     }
 
     const result = saveCustomerData(data);
-    return createJsonResponse(result, e.parameter ? e.parameter.callback : null);
+    return createJsonResponse(result, e && e.parameter ? e.parameter.callback : null);
   } catch (error) {
+    Logger.log("Lỗi doPost: " + error.toString());
     return createJsonResponse({
       success: false,
       message: "Lỗi doPost: " + error.toString()
@@ -131,7 +125,7 @@ function doPost(e) {
 }
 
 /**
- * Hàm hỗ trợ xuất JSON hoặc JSONP (nếu có callback)
+ * Xuất dữ liệu JSON / JSONP
  */
 function createJsonResponse(data, callback) {
   let outputText = JSON.stringify(data);
@@ -145,36 +139,22 @@ function createJsonResponse(data, callback) {
 }
 
 /**
- * 5. Lấy cấu hình ban đầu gửi về cho giao diện (Frontend)
- */
-function getAppConfig() {
-  return {
-    spreadsheetId: SPREADSHEET_ID,
-    spreadsheetUrl: SPREADSHEET_URL,
-    sheetDataName: SHEET_DATA_NAME,
-    sheetTongHopName: SHEET_TONG_HOP_NAME
-  };
-}
-
-/**
- * 6. Kết nối đến Google Spreadsheet một cách an toàn và linh hoạt
+ * Kết nối Spreadsheet an toàn
  */
 function getSpreadsheet() {
   try {
     const active = SpreadsheetApp.getActiveSpreadsheet();
     if (active) return active;
-  } catch (err) {
-    // Trường hợp chạy dưới dạng Web App độc lập
-  }
+  } catch (err) {}
 
   if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
     return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
   }
-  throw new Error("Không thể kết nối đến Google Spreadsheet. Vui lòng kiểm tra lại SPREADSHEET_ID!");
+  throw new Error("Không tìm thấy SPREADSHEET_ID!");
 }
 
 /**
- * 7. Lấy sheet theo tên (không phân biệt chữ hoa/thường, tự động tạo nếu chưa có)
+ * Lấy Sheet theo tên (hoặc sheet đầu tiên nếu không tìm thấy)
  */
 function getOrCreateSheet(ss, sheetName) {
   const normalized = sheetName.trim().toLowerCase();
@@ -184,52 +164,62 @@ function getOrCreateSheet(ss, sheetName) {
       return sheets[i];
     }
   }
-  // Nếu chưa có, tạo sheet mới
+  // Nếu là DATA mà chưa có, lấy sheet đầu tiên hoặc tạo mới
+  if (normalized === "data" && sheets.length > 0) {
+    return sheets[0];
+  }
   return ss.insertSheet(sheetName);
 }
 
 /**
- * 8. Kiểm tra và định dạng hàng tiêu đề cho Sheet DATA
+ * Kiểm tra và định dạng tiêu đề Sheet DATA khớp 100% với giao diện bảng tính của bạn:
+ * Col A: STT
+ * Col B: KHÁCH HÀNG
+ * Col C: SĐT
+ * Col D: NHÂN VIÊN
+ * Col E: Chiến Giá
+ * Col F: Time
+ * Col G: Sản Phẩm & Lý Do Ra Về
  */
 function ensureDataSheetHeader(sheet) {
-  const headers = [
-    "STT",
-    "THỜI GIAN",
-    "NGÀY",
-    "KHÁCH HÀNG",
-    "SỐ ĐIỆN THOẠI",
-    "SẢN PHẨM & LÝ DO RA VỀ",
-    "NHÂN VIÊN PHỤ TRÁCH",
-    "CHIẾN GIÁ"
-  ];
+  const lastRow = sheet.getLastRow();
+  const lastCol = Math.max(sheet.getLastColumn(), 6);
 
-  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue().toString().trim() === "") {
-    sheet.clear();
+  if (lastRow === 0) {
+    // Nếu sheet hoàn toàn trống, tạo hàng tiêu đề chuẩn
+    const headers = ["STT", "KHÁCH HÀNG", "SĐT", "NHÂN VIÊN", "Chiến Giá", "Time", "Sản Phẩm & Lý Do Ra Về"];
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setValues([headers]);
-    
-    // Áp dụng định dạng Header tone pastel xanh lá
     headerRange
-      .setBackground(THEME.HEADER_BG)
-      .setFontColor(THEME.HEADER_TEXT)
+      .setBackground("#f59e0b")
+      .setFontColor("#000000")
       .setFontWeight("bold")
       .setFontFamily("Arial")
       .setFontSize(10)
       .setHorizontalAlignment("center")
-      .setVerticalAlignment("middle")
-      .setWrap(true);
-    
-    sheet.setRowHeight(1, 40);
+      .setVerticalAlignment("middle");
+    sheet.setRowHeight(1, 38);
     sheet.setFrozenRows(1);
-
-    // Cài đặt độ rộng cột tối ưu
-    const colWidths = [60, 160, 110, 180, 140, 300, 170, 120];
-    colWidths.forEach((w, idx) => sheet.setColumnWidth(idx + 1, w));
+  } else {
+    // Nếu đã có hàng tiêu đề (như trong ảnh của bạn), kiểm tra xem cột G đã có "Sản Phẩm & Lý Do Ra Về" chưa
+    const headerG = sheet.getRange(1, 7).getValue().toString().trim();
+    if (!headerG) {
+      sheet.getRange(1, 7).setValue("Sản Phẩm & Lý Do Ra Về");
+      sheet.getRange(1, 7)
+        .setBackground(sheet.getRange(1, 6).getBackground() || "#f59e0b")
+        .setFontColor(sheet.getRange(1, 6).getFontColor() || "#000000")
+        .setFontWeight("bold")
+        .setFontFamily("Arial")
+        .setFontSize(10)
+        .setHorizontalAlignment("center")
+        .setVerticalAlignment("middle");
+      sheet.setColumnWidth(7, 260);
+    }
   }
 }
 
 /**
- * 9. Kiểm tra và định dạng hàng tiêu đề cho Sheet TỔNG HỢP
+ * Đảm bảo tiêu đề cột cho Sheet TỔNG HỢP
  */
 function ensureSummarySheetHeader(sheet) {
   const headers = [
@@ -244,48 +234,50 @@ function ensureSummarySheetHeader(sheet) {
 
   const headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setValues([headers]);
-  
   headerRange
-    .setBackground(THEME.HEADER_BG)
-    .setFontColor(THEME.HEADER_TEXT)
+    .setBackground(THEME.SUMMARY_HEADER_BG)
+    .setFontColor(THEME.SUMMARY_HEADER_TEXT)
     .setFontWeight("bold")
     .setFontFamily("Arial")
     .setFontSize(10)
     .setHorizontalAlignment("center")
-    .setVerticalAlignment("middle")
-    .setWrap(true);
+    .setVerticalAlignment("middle");
 
-  sheet.setRowHeight(1, 40);
+  sheet.setRowHeight(1, 38);
   sheet.setFrozenRows(1);
 
-  const colWidths = [60, 120, 200, 150, 170, 130, 150];
+  const colWidths = [60, 120, 200, 140, 160, 130, 140];
   colWidths.forEach((w, idx) => sheet.setColumnWidth(idx + 1, w));
 }
 
 /**
- * 10. HÀM CHÍNH: Nhận thông tin từ Form, ghi vào Sheet DATA và làm mới Sheet TỔNG HỢP
- * @param {Object} formData - { khachHang, sdt, sanPham, nhanVien, chienGia }
+ * 4. HÀM CHÍNH LƯU DỮ LIỆU VÀO SHEET "DATA"
+ * Khớp chuẩn xác theo các cột trong hình:
+ * Cột 1 (A): STT
+ * Cột 2 (B): KHÁCH HÀNG
+ * Cột 3 (C): SĐT (giữ nguyên số 0 ở đầu)
+ * Cột 4 (D): NHÂN VIÊN
+ * Cột 5 (E): Chiến Giá (Có / Không)
+ * Cột 6 (F): Time (dd/MM/yyyy HH:mm:ss)
+ * Cột 7 (G): Sản Phẩm & Lý Do Ra Về
  */
 function saveCustomerData(formData) {
-  // Sử dụng LockService chống xung đột ghi đè đồng thời
+  // Chống ghi đè đồng thời
   const lock = LockService.getScriptLock();
   try {
-    lock.waitLock(12000); // Đợi tối đa 12 giây
+    lock.waitLock(12000);
   } catch (err) {
-    return {
-      success: false,
-      message: "Hệ thống đang bận ghi dữ liệu khác, xin vui lòng thử lại sau vài giây!"
-    };
+    return { success: false, message: "Hệ thống đang bận, vui lòng thử lại sau vài giây!" };
   }
 
   try {
     const ss = getSpreadsheet();
     const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
     
-    // Đảm bảo tiêu đề cột có sẵn
+    // Đảm bảo hàng tiêu đề chuẩn
     ensureDataSheetHeader(sheetData);
 
-    // 1. Chuẩn hóa dữ liệu đầu vào
+    // Chuẩn hóa dữ liệu
     const khachHang = (formData.khachHang || "").trim();
     if (!khachHang) {
       return { success: false, message: "Vui lòng nhập tên Khách hàng!" };
@@ -298,69 +290,75 @@ function saveCustomerData(formData) {
     // Giữ số 0 đầu bằng dấu nháy đơn
     const sdtFormatted = sdtRaw.startsWith("'") ? sdtRaw : `'${sdtRaw}`;
 
-    const sanPham = (formData.sanPham || "").trim();
     const nhanVien = (formData.nhanVien || "").trim() || "Chưa phân công";
+    const sanPham = (formData.sanPham || "").trim();
     const isChienGia = Boolean(formData.chienGia);
     const chienGiaText = isChienGia ? "Có" : "Không";
 
-    // 2. Ngày giờ theo chuẩn Việt Nam (GMT+7)
+    // Khử trùng lặp trong 4 giây (phòng trường hợp gửi kép POST và GET)
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "save_" + encodeURIComponent(khachHang + "_" + sdtRaw);
+    if (cache.get(cacheKey)) {
+      return { success: true, message: `Đơn khách ${khachHang} đã được lưu thành công!` };
+    }
+    cache.put(cacheKey, "ok", 5);
+
+    // Thời gian chuẩn GMT+7
     const now = new Date();
     const thoiGianStr = Utilities.formatDate(now, "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
-    const ngayStr = Utilities.formatDate(now, "Asia/Ho_Chi_Minh", "dd/MM/yyyy");
 
-    // 3. Tính STT tự động dựa theo dòng cuối thực tế
+    // Tính STT tự động theo dòng cuối thực tế
     const lastRow = sheetData.getLastRow();
     const stt = lastRow >= 1 ? lastRow : 1;
     const targetRow = lastRow + 1;
 
-    // 4. Mảng giá trị ghi vào Sheet DATA:
-    // [STT, THỜI GIAN, NGÀY, KHÁCH HÀNG, SỐ ĐIỆN THOẠI, SẢN PHẨM & LÝ DO RA VỀ, NHÂN VIÊN PHỤ TRÁCH, CHIẾN GIÁ]
+    // MẢNG DỮ LIỆU GHI VÀO DÒNG MỚI:
+    // [STT, KHÁCH HÀNG, SĐT, NHÂN VIÊN, Chiến Giá, Time, Sản Phẩm]
     const rowValues = [
       stt,
-      thoiGianStr,
-      ngayStr,
       khachHang,
       sdtFormatted,
-      sanPham,
       nhanVien,
-      chienGiaText
+      chienGiaText,
+      thoiGianStr,
+      sanPham
     ];
 
     sheetData.appendRow(rowValues);
 
-    // 5. Định dạng dòng mới nhập
+    // Định dạng thẩm mỹ cho dòng vừa ghi
     sheetData.setRowHeight(targetRow, 32);
-    const rowRange = sheetData.getRange(targetRow, 1, 1, 8);
+    const rowRange = sheetData.getRange(targetRow, 1, 1, 7);
     rowRange
       .setFontFamily("Arial")
       .setFontSize(10)
       .setVerticalAlignment("middle")
       .setBorder(true, true, true, true, true, true, THEME.BORDER_COLOR, SpreadsheetApp.BorderStyle.SOLID);
 
-    // Căn giữa các cột: STT(1), Thời Gian(2), Ngày(3), SĐT(5), Nhân Viên(7), Chiến Giá(8)
-    [1, 2, 3, 5, 7, 8].forEach(col => {
+    // Căn giữa: STT(1), SĐT(3), NHÂN VIÊN(4), Chiến Giá(5), Time(6)
+    [1, 3, 4, 5, 6].forEach(col => {
       sheetData.getRange(targetRow, col).setHorizontalAlignment("center");
     });
-    // Căn trái: Khách Hàng(4), Sản Phẩm(6)
-    [4, 6].forEach(col => {
+    // Căn trái: KHÁCH HÀNG(2), Sản Phẩm(7)
+    [2, 7].forEach(col => {
       sheetData.getRange(targetRow, col).setHorizontalAlignment("left");
     });
 
-    // Định dạng màu cho cột Chiến Giá
-    const chienGiaCell = sheetData.getRange(targetRow, 8);
+    // Tô màu nổi bật cho ô Chiến Giá
+    const cellChienGia = sheetData.getRange(targetRow, 5);
     if (isChienGia) {
-      chienGiaCell
+      cellChienGia
         .setBackground(THEME.YES_BADGE_BG)
         .setFontColor(THEME.YES_BADGE_TEXT)
         .setFontWeight("bold");
     } else {
-      chienGiaCell
+      cellChienGia
         .setBackground(THEME.NO_BADGE_BG)
         .setFontColor(THEME.NO_BADGE_TEXT)
         .setFontWeight("normal");
     }
 
-    // 6. Tự động cập nhật lại Sheet TỔNG HỢP ngay lập tức
+    // Tự động làm mới Sheet TỔNG HỢP
     updateSummarySheetInternal(ss);
 
     return {
@@ -368,14 +366,12 @@ function saveCustomerData(formData) {
       message: `Đã lưu thành công khách hàng #${stt}!`,
       data: {
         stt: stt,
-        thoiGian: thoiGianStr,
-        ngay: ngayStr,
         khachHang: khachHang,
         sdt: sdtRaw,
-        sanPham: sanPham,
         nhanVien: nhanVien,
         chienGia: isChienGia,
-        chienGiaText: chienGiaText
+        thoiGian: thoiGianStr,
+        sanPham: sanPham
       }
     };
 
@@ -383,7 +379,7 @@ function saveCustomerData(formData) {
     Logger.log("Lỗi khi lưu dữ liệu: " + error.toString());
     return {
       success: false,
-      message: "Lỗi hệ thống khi lưu: " + error.toString()
+      message: "Lỗi lưu trang tính: " + error.toString()
     };
   } finally {
     lock.releaseLock();
@@ -391,40 +387,44 @@ function saveCustomerData(formData) {
 }
 
 /**
- * 11. HÀM TỔNG HỢP: Gom nhóm theo Ngày + Nhân viên, đếm số đơn Chiến giá & Không chiến giá
+ * 5. HÀM TỔNG HỢP: Thống kê số lượng đơn Chiến Giá & Không Chiến Giá theo Ngày và Nhân Viên
  */
 function updateSummarySheetInternal(ss) {
   if (!ss) ss = getSpreadsheet();
-  
+
   const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
   const sheetSummary = getOrCreateSheet(ss, SHEET_TONG_HOP_NAME);
 
-  // Đảm bảo tiêu đề cột
   ensureSummarySheetHeader(sheetSummary);
 
   const lastRowData = sheetData.getLastRow();
-  // Xóa vùng dữ liệu cũ trong Sheet Tổng Hợp (từ dòng 2 trở đi)
   const lastRowSummary = sheetSummary.getLastRow();
   if (lastRowSummary > 1) {
     sheetSummary.getRange(2, 1, lastRowSummary - 1, 7).clear();
   }
 
-  // Nếu không có dữ liệu nào trong sheet DATA
-  if (lastRowData <= 1) {
-    return;
-  }
+  if (lastRowData <= 1) return;
 
-  // Lấy dữ liệu từ Sheet DATA: Cột 3 (Ngày), Cột 7 (Nhân Viên), Cột 8 (Chiến Giá)
-  const dataValues = sheetData.getRange(2, 1, lastRowData - 1, 8).getValues();
-
-  // Cấu trúc gom nhóm theo cặp (Ngày + Nhân Viên)
-  // Map key: `${ngay}___${nhanVien}`
+  // Lấy toàn bộ dữ liệu từ dòng 2 của Sheet DATA
+  // Cột 4: NHÂN VIÊN, Cột 5: Chiến Giá, Cột 6: Time (dd/MM/yyyy HH:mm:ss)
+  const dataValues = sheetData.getRange(2, 1, lastRowData - 1, 7).getValues();
   const summaryMap = {};
 
   dataValues.forEach(row => {
-    const ngay = (row[2] || "").toString().trim();
-    const nhanVien = (row[6] || "").toString().trim() || "Chưa phân công";
-    const chienGiaVal = (row[7] || "").toString().trim().toLowerCase();
+    const nhanVien = (row[3] || "").toString().trim() || "Chưa phân công";
+    const chienGiaVal = (row[4] || "").toString().trim().toLowerCase();
+    const timeVal = (row[5] || "").toString().trim();
+
+    // Tách lấy Ngày (dd/MM/yyyy) từ chuỗi thời gian
+    let ngay = "";
+    if (timeVal.includes(" ")) {
+      ngay = timeVal.split(" ")[0]; // Nếu dạng dd/MM/yyyy HH:mm:ss
+      if (ngay.includes(":") && timeVal.split(" ").length > 1) {
+        ngay = timeVal.split(" ")[1]; // Nếu dạng HH:mm:ss dd/MM/yyyy
+      }
+    } else if (timeVal) {
+      ngay = timeVal;
+    }
 
     if (!ngay && !nhanVien) return;
 
@@ -451,12 +451,11 @@ function updateSummarySheetInternal(ss) {
   const keys = Object.keys(summaryMap);
   if (keys.length === 0) return;
 
-  // Sắp xếp theo thứ tự ngày (mới nhất hoặc theo ngày tăng dần) và theo tên nhân viên
+  // Sắp xếp ngày mới nhất lên trước và theo tên nhân viên
   keys.sort((a, b) => {
     const itemA = summaryMap[a];
     const itemB = summaryMap[b];
 
-    // Chuyển đổi định dạng dd/MM/yyyy để so sánh thời gian
     const parseDate = (dStr) => {
       const parts = dStr.split("/");
       if (parts.length === 3) {
@@ -468,28 +467,25 @@ function updateSummarySheetInternal(ss) {
     const timeA = parseDate(itemA.ngay);
     const timeB = parseDate(itemB.ngay);
 
-    if (timeA !== timeB) {
-      return timeB - timeA; // Ngày mới nhất lên trước
-    }
+    if (timeA !== timeB) return timeB - timeA;
     return itemA.nhanVien.localeCompare(itemB.nhanVien, "vi");
   });
 
-  // Chuẩn bị mảng 2 chiều ghi vào sheet
   const outputRows = [];
-  let totalAllChienGia = 0;
-  let totalAllKhongChienGia = 0;
+  let sumChienGia = 0;
+  let sumKhongChienGia = 0;
   let grandTotal = 0;
 
-  keys.forEach((k, index) => {
+  keys.forEach((k, idx) => {
     const item = summaryMap[k];
     const tyLe = item.total > 0 ? (item.chienGia / item.total) : 0;
 
-    totalAllChienGia += item.chienGia;
-    totalAllKhongChienGia += item.khongChienGia;
+    sumChienGia += item.chienGia;
+    sumKhongChienGia += item.khongChienGia;
     grandTotal += item.total;
 
     outputRows.push([
-      index + 1,
+      idx + 1,
       item.ngay,
       item.nhanVien,
       item.chienGia,
@@ -499,25 +495,23 @@ function updateSummarySheetInternal(ss) {
     ]);
   });
 
-  // Thêm dòng TỔNG CỘNG ở cuối bảng
-  const grandRatio = grandTotal > 0 ? (totalAllChienGia / grandTotal) : 0;
+  // Hàng TỔNG CỘNG
+  const grandRatio = grandTotal > 0 ? (sumChienGia / grandTotal) : 0;
   outputRows.push([
     "TỔNG CỘNG",
     "-",
     "-",
-    totalAllChienGia,
-    totalAllKhongChienGia,
+    sumChienGia,
+    sumKhongChienGia,
     grandTotal,
     grandRatio
   ]);
 
-  // Ghi toàn bộ dữ liệu vào Sheet TỔNG HỢP
   const startRow = 2;
   const numRows = outputRows.length;
   const targetRange = sheetSummary.getRange(startRow, 1, numRows, 7);
   targetRange.setValues(outputRows);
 
-  // Định dạng toàn bảng
   targetRange
     .setFontFamily("Arial")
     .setFontSize(10)
@@ -528,63 +522,44 @@ function updateSummarySheetInternal(ss) {
     sheetSummary.setRowHeight(startRow + r, 30);
   }
 
-  // Căn lề: Cột STT(1), Ngày(2), Đơn Chiến Giá(4), Đơn Không Chiến Giá(5), Tổng Đơn(6), Tỷ Lệ(7) căn giữa
   sheetSummary.getRange(startRow, 1, numRows, 1).setHorizontalAlignment("center");
   sheetSummary.getRange(startRow, 2, numRows, 1).setHorizontalAlignment("center");
-  sheetSummary.getRange(startRow, 3, numRows, 1).setHorizontalAlignment("left"); // Nhân viên căn trái
+  sheetSummary.getRange(startRow, 3, numRows, 1).setHorizontalAlignment("left");
   sheetSummary.getRange(startRow, 4, numRows, 4).setHorizontalAlignment("center");
-
-  // Định dạng % cho Cột 7 (Tỷ Lệ Chiến Giá)
   sheetSummary.getRange(startRow, 7, numRows, 1).setNumberFormat("0.0%");
 
-  // Định dạng nổi bật dòng TỔNG CỘNG
-  const totalRowIndex = startRow + numRows - 1;
-  const totalRowRange = sheetSummary.getRange(totalRowIndex, 1, 1, 7);
+  // Định dạng dòng TỔNG CỘNG
+  const totalRowRange = sheetSummary.getRange(startRow + numRows - 1, 1, 1, 7);
   totalRowRange
     .setFontWeight("bold")
     .setBackground(THEME.TOTAL_BG)
-    .setFontColor(THEME.TOTAL_TEXT);
-  
-  // Viền đôi dưới dòng tổng cộng
-  totalRowRange.setBorder(true, true, true, true, true, true, THEME.TOTAL_TEXT, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    .setFontColor(THEME.TOTAL_TEXT)
+    .setBorder(true, true, true, true, true, true, THEME.TOTAL_TEXT, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 }
 
-/**
- * 12. Hàm người dùng bấm từ Menu để tự cập nhật bảng tổng hợp
- */
 function manualUpdateSummary() {
   const ss = getSpreadsheet();
   updateSummarySheetInternal(ss);
-  SpreadsheetApp.getUi().alert("Thông Báo", "✅ Đã cập nhật thành công Bảng Tổng Hợp Chiến Giá!", SpreadsheetApp.getUi().ButtonSet.OK);
+  SpreadsheetApp.getUi().alert("Thông Báo", "✅ Đã cập nhật thành công Bảng Tổng Hợp!", SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
-/**
- * 13. Hàm định dạng lại giao diện cả 2 sheet theo chuẩn Pastel
- */
 function formatSheetsManual() {
   const ss = getSpreadsheet();
   const sheetData = getOrCreateSheet(ss, SHEET_DATA_NAME);
   const sheetSummary = getOrCreateSheet(ss, SHEET_TONG_HOP_NAME);
-
   ensureDataSheetHeader(sheetData);
   ensureSummarySheetHeader(sheetSummary);
   updateSummarySheetInternal(ss);
-
-  SpreadsheetApp.getUi().alert("Thông Báo", "✨ Đã định dạng lại bảng tính theo tone xanh pastel thành công!", SpreadsheetApp.getUi().ButtonSet.OK);
+  SpreadsheetApp.getUi().alert("Thông Báo", "✨ Đã định dạng lại bảng tính thành công!", SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
-/**
- * 14. Hộp thoại Hướng dẫn sử dụng
- */
 function showHelp() {
   const ui = SpreadsheetApp.getUi();
   ui.alert(
-    "🌿 HƯỚNG DẪN SỬ DỤNG FORM NHẬP LIỆU CHIẾN GIÁ",
-    "1. Mở Form từ thanh menu 'Quản Lý Nhập Liệu' hoặc truy cập qua liên kết Web App.\n" +
-    "2. Điền Khách Hàng, SĐT, Sản Phẩm & Mã Nhân Viên.\n" +
-    "3. Tích chọn ô 'Chiến Giá' nếu đơn có thương lượng/chiến giá (mặc định là Không).\n" +
-    "4. Nhấn 'Lưu Thông Tin' hoặc dùng phím tắt Enter / Ctrl+Enter để lưu.\n" +
-    "5. Dữ liệu sẽ lập tức lưu vào sheet 'DATA' và tự động tổng hợp số lượng sang sheet 'TỔNG HỢP'.",
+    "🌿 HƯỚNG DẪN SỬ DỤNG",
+    "1. Dữ liệu khi lưu sẽ được tự động điền vào các cột: STT | KHÁCH HÀNG | SĐT | NHÂN VIÊN | Chiến Giá | Time | Sản Phẩm.\n" +
+    "2. Số điện thoại được giữ nguyên số 0 ở đầu.\n" +
+    "3. Bảng 'TỔNG HỢP' sẽ tự động đếm số đơn Chiến Giá và Không Chiến Giá theo Ngày và Nhân Viên.",
     ui.ButtonSet.OK
   );
 }
