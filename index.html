@@ -468,6 +468,10 @@
       transform: translateY(-1px);
     }
 
+    #btnOpenSheetOrigin {
+      display: none !important;
+    }
+
     /* Toast Thông báo */
     .toast-container {
       position: fixed;
@@ -1887,6 +1891,7 @@
         target="_blank"
         rel="noopener noreferrer"
         class="btn-sheet"
+        style="display: none !important;"
         onclick="this.href = getSpreadsheetUrl()"
       >
         <span>📑</span> <span>Mở Trang Tính Google Sheet ↗</span>
