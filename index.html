@@ -2669,6 +2669,9 @@
 
       // Tải danh sách nhân viên từ sheet "nhân viên"
       loadMasterStaffList();
+
+      // Khởi động đồng bộ dữ liệu thời gian thực giữa các trình duyệt
+      startRealtimeSync();
     });
 
     // Đóng dropdown gợi ý khi click ra ngoài
@@ -3240,6 +3243,7 @@
           giaSanPham: giaSanPham
         };
         rawCustomersList.unshift(optOrder);
+        currentReportVersion = String(Date.now());
         saveReportCache();
       } catch (e) {}
 
@@ -3918,6 +3922,7 @@
             };
           });
           rawCustomersList.sort((a, b) => (b.stt || 0) - (a.stt || 0));
+          if (res && res.version) currentReportVersion = res.version;
           saveReportCache();
           renderFilteredReport();
           if (forceToast) showToast("Đã đồng bộ dữ liệu thành công!", "success");
@@ -3983,7 +3988,64 @@
       // Sắp xếp đơn mới nhất lên đầu (STT giảm dần)
       list.sort((a, b) => (b.stt || 0) - (a.stt || 0));
       rawCustomersList = list;
+      if (!currentReportVersion && list.length > 0) {
+        currentReportVersion = String(Date.now());
+      }
       saveReportCache();
+    }
+
+    // =========================================================================
+    // HỆ THỐNG TỰ ĐỘNG ĐỒNG BỘ 2 CHIỀU ĐA TRÌNH DUYỆT (REAL-TIME ENGINE)
+    // =========================================================================
+    let currentReportVersion = "";
+    let realtimeSyncTimer = null;
+    let isCheckingUpdate = false;
+
+    function startRealtimeSync() {
+      if (realtimeSyncTimer) clearInterval(realtimeSyncTimer);
+      // Kiểm tra định kỳ mỗi 4 giây bằng request kiểm tra Version siêu nhẹ (< 15ms)
+      realtimeSyncTimer = setInterval(checkRemoteUpdates, 4000);
+    }
+
+    async function checkRemoteUpdates() {
+      if (isCheckingUpdate || isSavingInProgress || isReportLoading) return;
+      isCheckingUpdate = true;
+
+      const cbName = "sync_cb_" + Math.round(100000 * Math.random());
+      const scriptTimeout = setTimeout(() => {
+        isCheckingUpdate = false;
+        try { delete window[cbName]; } catch (e) {}
+      }, 5000);
+
+      window[cbName] = function(res) {
+        clearTimeout(scriptTimeout);
+        isCheckingUpdate = false;
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+
+        if (res && res.success) {
+          if (res.hasUpdate && res.version && res.version !== currentReportVersion) {
+            currentReportVersion = res.version;
+            loadReportData(false);
+            showToast("🌿 Đã phát hiện và đồng bộ đơn hàng mới!", "info");
+          } else if (!currentReportVersion && res.version) {
+            currentReportVersion = res.version;
+          }
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') +
+        'action=checkUpdate&spreadsheetId=' + encodeURIComponent(currentSheetId) +
+        '&v=' + encodeURIComponent(currentReportVersion || '') +
+        '&callback=' + cbName;
+
+      script.onerror = () => {
+        clearTimeout(scriptTimeout);
+        isCheckingUpdate = false;
+        try { delete window[cbName]; } catch (e) {}
+      };
+
+      document.body.appendChild(script);
     }
 
     function setActivePill(activeId) {

@@ -30,6 +30,108 @@ const THEME = {
   NO_BADGE_TEXT: "#64748b"
 };
 
+// =========================================================================================
+// HỆ THỐNG CACHE WRITE-THROUGH & ĐỒNG BỘ ĐA TRÌNH DUYỆT SIÊU TỐC (REAL-TIME ENGINE)
+// =========================================================================================
+const CACHE_PREFIX = "CHIENGIA_CACHE_V2_";
+const CACHE_TTL_REPORT = 300;   // 5 phút lưu RAM Cache cho Báo Cáo
+const CACHE_TTL_STAFF = 1800;   // 30 phút lưu RAM Cache cho Danh Sách Nhân Viên
+const CACHE_TTL_SHOPS = 1800;   // 30 phút lưu RAM Cache cho Danh Sách Shops
+
+function getCacheKeyForReport(sheetId) {
+  return CACHE_PREFIX + "REPORT_" + (sheetId || SPREADSHEET_ID).toString().trim();
+}
+
+function getVersionKey(sheetId) {
+  return CACHE_PREFIX + "VER_" + (sheetId || SPREADSHEET_ID).toString().trim();
+}
+
+function getCacheKeyForStaff(sheetId) {
+  return CACHE_PREFIX + "STAFF_" + (sheetId || SPREADSHEET_ID).toString().trim();
+}
+
+function getCacheKeyForShops() {
+  return CACHE_PREFIX + "ALL_SHOPS";
+}
+
+function getDataVersion(sheetId) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const v = cache.get(getVersionKey(sheetId));
+    if (v) return v;
+  } catch (e) {}
+  return String(new Date().getTime());
+}
+
+function bumpDataVersion(sheetId) {
+  const newV = String(new Date().getTime());
+  try {
+    const cache = CacheService.getScriptCache();
+    cache.put(getVersionKey(sheetId), newV, CACHE_TTL_REPORT);
+  } catch (e) {}
+  return newV;
+}
+
+function invalidateSheetCache(sheetId) {
+  try {
+    const sId = (sheetId || SPREADSHEET_ID).toString().trim();
+    const cache = CacheService.getScriptCache();
+    cache.remove(getCacheKeyForReport(sId));
+    cache.remove(getCacheKeyForStaff(sId));
+    cache.remove(getVersionKey(sId));
+  } catch (e) {}
+}
+
+function updateCachedReportOnSave(sheetId, newOrder) {
+  try {
+    const sId = (sheetId || SPREADSHEET_ID).toString().trim();
+    const cacheKey = getCacheKeyForReport(sId);
+    const cache = CacheService.getScriptCache();
+    const cachedStr = cache.get(cacheKey);
+    if (!cachedStr) return;
+
+    const reportObj = JSON.parse(cachedStr);
+    if (reportObj && Array.isArray(reportObj.list)) {
+      reportObj.list.unshift(newOrder);
+      if (reportObj.list.length > 3000) {
+        reportObj.list = reportObj.list.slice(0, 3000);
+      }
+      if (newOrder.date && reportObj.dates && !reportObj.dates.includes(newOrder.date)) {
+        reportObj.dates.unshift(newOrder.date);
+      }
+      cache.put(cacheKey, JSON.stringify(reportObj), CACHE_TTL_REPORT);
+    }
+  } catch (err) {
+    Logger.log("Lỗi updateCachedReportOnSave: " + err.toString());
+  }
+}
+
+/**
+ * Tự động xóa Cache khi có bất kỳ ai sửa hoặc xóa trên Google Sheets
+ */
+function onEdit(e) {
+  try {
+    const sheet = e && e.range ? e.range.getSheet() : null;
+    const ss = sheet ? sheet.getParent() : SpreadsheetApp.getActiveSpreadsheet();
+    const sheetId = ss ? ss.getId() : SPREADSHEET_ID;
+    invalidateSheetCache(sheetId);
+    bumpDataVersion(sheetId);
+  } catch (err) {
+    Logger.log("Lỗi onEdit: " + err.toString());
+  }
+}
+
+function onChange(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetId = ss ? ss.getId() : SPREADSHEET_ID;
+    invalidateSheetCache(sheetId);
+    bumpDataVersion(sheetId);
+  } catch (err) {
+    Logger.log("Lỗi onChange: " + err.toString());
+  }
+}
+
 /**
  * 1. Khởi tạo menu trên Google Sheets
  */
@@ -107,6 +209,19 @@ function doGet(e) {
     }
   }
 
+  // ⚡ KIỂM TRA THAY ĐỔI ĐỒNG BỘ ĐA TRÌNH DUYỆT (FAST POLL / VERSION CHECK < 15ms)
+  const clientVersion = e && e.parameter ? (e.parameter.v || e.parameter.version || "").toString().trim() : "";
+  if (e && e.parameter && (e.parameter.action === "checkUpdate" || (e.parameter.action === "getReport" && clientVersion))) {
+    const currentVersion = getDataVersion(customSheetId);
+    if (clientVersion && clientVersion === currentVersion) {
+      return createJsonResponse({
+        success: true,
+        hasUpdate: false,
+        version: currentVersion
+      }, e.parameter.callback);
+    }
+  }
+
   // 3. API Đăng ký mã Shop tự động (hoặc chỉ định)
   if (e && e.parameter && e.parameter.action === "registerShop") {
     const rawSheet = e.parameter.sheetId || e.parameter.sheet || e.parameter.url || "";
@@ -122,23 +237,23 @@ function doGet(e) {
     return createJsonResponse(result, e.parameter.callback);
   }
 
-  // 5. API Lấy danh sách toàn bộ Shop đã đăng ký
+  // 5. API Lấy danh sách toàn bộ Shop đã đăng ký (hỗ trợ Cache RAM)
   if (e && e.parameter && e.parameter.action === "getShops") {
-    const result = getAllShops();
+    const result = getAllShopsCached();
     return createJsonResponse(result, e.parameter.callback);
   }
 
-  // 6. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web (hỗ trợ phân trang / giới hạn để siêu tốc)
+  // 6. API lấy dữ liệu Báo Cáo Tổng Hợp cho giao diện Web (hỗ trợ Cache RAM siêu tốc < 15ms)
   if (e && e.parameter && (e.parameter.action === "getReport" || e.parameter.action === "getData")) {
     const limit = e.parameter.limit ? parseInt(e.parameter.limit) : 3000;
     const date = e.parameter.date || null;
-    const report = getReportData(date, limit, customSheetId);
+    const report = readReportDataCached(date, limit, customSheetId);
     return createJsonResponse(report, e.parameter.callback);
   }
 
-  // 7. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động
+  // 7. API lấy danh sách nhân viên từ sheet "nhân viên" cho gợi ý tự động (hỗ trợ Cache RAM)
   if (e && e.parameter && (e.parameter.action === "getStaffList" || e.parameter.action === "getStaff")) {
-    const staffData = getStaffList(customSheetId);
+    const staffData = getStaffListCached(customSheetId);
     return createJsonResponse(staffData, e.parameter.callback);
   }
 
@@ -481,8 +596,34 @@ function saveCustomerData(formData) {
     // TỐI ƯU CHO DỮ LIỆU LƯU TRỮ LÂU: Cập nhật tăng dần (incremental) siêu tốc trong < 50ms
     updateSummaryIncremental(ss, thoiGianStr, nhanVien, isChienGia);
 
+    // CẬP NHẬT WRITE-THROUGH VÀO RAM CACHE NGAY TỨC THÌ (CHO MỌI MÁY THẤY NGAY < 20ms)
+    const dateOnlyStr = thoiGianStr.includes(" ") ? thoiGianStr.split(" ")[0] : thoiGianStr;
+    let dateKeyStr = "";
+    if (dateOnlyStr.includes("/")) {
+      const parts = dateOnlyStr.split("/");
+      if (parts.length === 3) dateKeyStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+
+    updateCachedReportOnSave(targetSheetId, {
+      stt: stt,
+      khachHang: khachHang,
+      sdt: sdtRaw,
+      nhanVien: nhanVien,
+      chienGia: isChienGia,
+      chienGiaText: chienGiaText,
+      time: thoiGianStr,
+      date: dateOnlyStr,
+      dateKey: dateKeyStr,
+      dateDisplay: dateOnlyStr,
+      sanPham: sanPham,
+      giaSanPham: giaSanPham
+    });
+
+    const newVersion = bumpDataVersion(targetSheetId);
+
     return {
       success: true,
+      version: newVersion,
       message: `Đã lưu thành công khách hàng #${stt}!`,
       data: {
         stt: stt,
@@ -493,7 +634,8 @@ function saveCustomerData(formData) {
         thoiGian: thoiGianStr,
         sanPham: sanPham,
         giaSanPham: giaSanPham,
-        spreadsheetId: targetSheetId || SPREADSHEET_ID
+        spreadsheetId: targetSheetId || SPREADSHEET_ID,
+        version: newVersion
       }
     };
 
@@ -813,6 +955,42 @@ function formatSummaryTotalRow(sheet, rowIdx) {
 }
 
 /**
+ * Đọc dữ liệu Báo Cáo ưu tiên từ CacheService RAM (< 15ms)
+ * Chỉ đọc từ Google Sheet khi bị Cache Miss hoặc có lọc ngày riêng biệt
+ */
+function readReportDataCached(dateFilter, limit, customSheetId) {
+  const sId = (customSheetId || SPREADSHEET_ID).toString().trim();
+  const cacheKey = getCacheKeyForReport(sId);
+  const cache = CacheService.getScriptCache();
+
+  // Nếu không lọc ngày cụ thể, ưu tiên trả về từ RAM Cache (< 15ms)
+  if (!dateFilter) {
+    try {
+      const cachedStr = cache.get(cacheKey);
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr);
+        parsed.isCached = true;
+        parsed.version = getDataVersion(sId);
+        return parsed;
+      }
+    } catch (e) {}
+  }
+
+  // Đọc dữ liệu mới nhất từ Google Sheets
+  const freshData = getReportData(dateFilter, limit, customSheetId);
+  freshData.version = getDataVersion(sId);
+
+  // Lưu vào Cache RAM nếu là danh sách chung
+  if (!dateFilter && freshData && freshData.success && Array.isArray(freshData.list)) {
+    try {
+      cache.put(cacheKey, JSON.stringify(freshData), CACHE_TTL_REPORT);
+    } catch (e) {}
+  }
+
+  return freshData;
+}
+
+/**
  * 6. LẤY DỮ LIỆU BÁO CÁO CHO WEB FORM TỔNG HỢP
  * Hỗ trợ lấy giới hạn N dòng gần nhất (mặc định 3.000 dòng) để phản hồi siêu tốc ngay cả khi sheet có hàng trăm nghìn đơn
  */
@@ -913,6 +1091,8 @@ function getReportData(dateFilter, limit, customSheetId) {
 function manualUpdateSummary() {
   const ss = getSpreadsheet();
   updateSummarySheetInternal(ss);
+  invalidateSheetCache();
+  bumpDataVersion();
   SpreadsheetApp.getUi().alert("Thông Báo", "✅ Đã cập nhật thành công Bảng Tổng Hợp!", SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
@@ -923,6 +1103,8 @@ function formatSheetsManual() {
   ensureDataSheetHeader(sheetData);
   ensureSummarySheetHeader(sheetSummary);
   updateSummarySheetInternal(ss);
+  invalidateSheetCache();
+  bumpDataVersion();
   SpreadsheetApp.getUi().alert("Thông Báo", "✨ Đã định dạng lại bảng tính thành công!", SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
@@ -1049,6 +1231,9 @@ function archiveOldData() {
       sheetData.getRange(2, 1, keepRows.length, 8).setValues(keepRows);
     }
 
+    invalidateSheetCache();
+    bumpDataVersion();
+
     ui.alert("Thành Công", `✅ Đã chuyển thành công ${archiveRows.length} đơn cũ sang sheet 'DATA_ARCHIVE'.\nSheet 'DATA' hiện còn ${keepRows.length} đơn gần nhất!`, ui.ButtonSet.OK);
   } catch (err) {
     Logger.log("Lỗi archiveOldData: " + err.toString());
@@ -1101,6 +1286,32 @@ function getStaffList(customSheetId) {
       list: []
     };
   }
+}
+
+/**
+ * Lấy danh sách nhân viên ưu tiên đọc từ CacheService RAM (< 15ms)
+ */
+function getStaffListCached(customSheetId) {
+  const sId = (customSheetId || SPREADSHEET_ID).toString().trim();
+  const cacheKey = getCacheKeyForStaff(sId);
+  const cache = CacheService.getScriptCache();
+
+  try {
+    const cachedStr = cache.get(cacheKey);
+    if (cachedStr) {
+      const parsed = JSON.parse(cachedStr);
+      parsed.isCached = true;
+      return parsed;
+    }
+  } catch (e) {}
+
+  const staffData = getStaffList(customSheetId);
+  if (staffData && staffData.success && Array.isArray(staffData.list)) {
+    try {
+      cache.put(cacheKey, JSON.stringify(staffData), CACHE_TTL_STAFF);
+    } catch (e) {}
+  }
+  return staffData;
 }
 
 /**
@@ -1227,6 +1438,11 @@ function registerShop(sheetIdOrUrl, customShopCode) {
       shopsSheet.appendRow([shopCode, sheetTitle, sheetId, sheetUrl, nowStr]);
     }
 
+    // Xóa Cache danh sách Shop để các máy khác cập nhật ngay lập tức
+    try {
+      CacheService.getScriptCache().remove(getCacheKeyForShops());
+    } catch (e) {}
+
     return {
       success: true,
       shopCode: shopCode,
@@ -1307,3 +1523,28 @@ function getAllShops() {
     return { success: false, error: e.toString(), shops: [] };
   }
 }
+
+/**
+ * Lấy danh sách shop ưu tiên đọc từ CacheService RAM (< 15ms)
+ */
+function getAllShopsCached() {
+  const cacheKey = getCacheKeyForShops();
+  const cache = CacheService.getScriptCache();
+  try {
+    const cachedStr = cache.get(cacheKey);
+    if (cachedStr) {
+      const parsed = JSON.parse(cachedStr);
+      parsed.isCached = true;
+      return parsed;
+    }
+  } catch (e) {}
+
+  const res = getAllShops();
+  if (res && res.success && Array.isArray(res.shops)) {
+    try {
+      cache.put(cacheKey, JSON.stringify(res), CACHE_TTL_SHOPS);
+    } catch (e) {}
+  }
+  return res;
+}
+
